@@ -1,0 +1,413 @@
+local players = game:getservice("players")
+local http = game:getservice("httpservice")
+local run = game:getservice("runservice")
+local gui = game:getservice("guiservice")
+local player = players.localplayer
+
+local screen = instance.new("screengui")
+screen.name = "axomiclogger"
+screen.parent = player:waitforchild("playergui") or player.playergui
+
+local mainframe = instance.new("frame")
+mainframe.backgroundcolor3 = color3.new(1,1,1)
+mainframe.size = udim2.new(0,500,0,600)
+mainframe.position = udim2.new(0.5,-250,0.5,-300)
+mainframe.parent = screen
+
+local titlebar = instance.new("frame")
+titlebar.size = udim2.new(1,0,0,30)
+titlebar.backgroundcolor3 = color3.new(0.8,0.8,0.8)
+titlebar.parent = mainframe
+
+local drag = instance.new("uidragdetector")
+drag.parent = titlebar
+
+local titlelabel = instance.new("textlabel")
+titlelabel.size = udim2.new(1,-40,1,0)
+titlelabel.text = "axomic | luau env logger"
+titlelabel.textcolor3 = color3.new(0,0,0)
+titlelabel.backgroundtransparency = 1
+titlelabel.textxalignment = enum.textxalignment.left
+titlelabel.parent = titlebar
+
+local closebtn = instance.new("textbutton")
+closebtn.size = udim2.new(0,30,1,0)
+closebtn.position = udim2.new(1,-30,0,0)
+closebtn.text = "x"
+closebtn.textcolor3 = color3.new(0,0,0)
+closebtn.backgroundcolor3 = color3.new(0.9,0.9,0.9)
+closebtn.parent = titlebar
+closebtn.mousebutton1click:connect(function()
+    screen:destroy()
+end)
+
+local modeframe = instance.new("frame")
+modeframe.size = udim2.new(1,0,0,40)
+modeframe.position = udim2.new(0,0,0,35)
+modeframe.backgroundtransparency = 1
+modeframe.parent = mainframe
+
+local mode1 = instance.new("textbutton")
+mode1.size = udim2.new(0.5,-5,1,-5)
+mode1.position = udim2.new(0,5,0,0)
+mode1.text = "load directly"
+mode1.backgroundcolor3 = color3.new(0.9,0.9,0.9)
+mode1.textcolor3 = color3.new(0,0,0)
+mode1.parent = modeframe
+
+local mode2 = instance.new("textbutton")
+mode2.size = udim2.new(0.5,-5,1,-5)
+mode2.position = udim2.new(0.5,0,0,0)
+mode2.text = "load from link"
+mode2.backgroundcolor3 = color3.new(0.9,0.9,0.9)
+mode2.textcolor3 = color3.new(0,0,0)
+mode2.parent = modeframe
+
+local inputbox = instance.new("textbox")
+inputbox.size = udim2.new(1,-10,0,100)
+inputbox.position = udim2.new(0,5,0,80)
+inputbox.backgroundcolor3 = color3.new(0.95,0.95,0.95)
+inputbox.textcolor3 = color3.new(0,0,0)
+inputbox.placeholdertext = "paste obf script here"
+inputbox.text = ""
+inputbox.cleartextonfocus = false
+inputbox.multiline = true
+inputbox.parent = mainframe
+
+local toggleframe = instance.new("frame")
+toggleframe.size = udim2.new(1,0,0,30)
+toggleframe.position = udim2.new(0,0,0,185)
+toggleframe.backgroundtransparency = 1
+toggleframe.parent = mainframe
+
+local togglebg = instance.new("frame")
+togglebg.size = udim2.new(0,80,0,25)
+togglebg.position = udim2.new(0.5,-40,0,0)
+togglebg.backgroundcolor3 = color3.new(0.8,0.8,0.8)
+togglebg.parent = toggleframe
+
+local togglelabel = instance.new("textlabel")
+togglelabel.size = udim2.new(1,0,1,0)
+togglelabel.text = "log calls"
+togglelabel.textcolor3 = color3.new(0,0,0)
+togglelabel.backgroundtransparency = 1
+togglelabel.parent = togglebg
+
+local toggle = instance.new("imagebutton")
+toggle.size = udim2.new(0,20,0,20)
+toggle.position = udim2.new(0.5,-10,0,2.5)
+toggle.backgroundtransparency = 1
+toggle.image = "rbxassetid://0"
+toggle.parent = togglebg
+
+local ison = false
+toggle.mousebutton1click:connect(function()
+    ison = not ison
+    if ison then
+        toggle.image = "rbxassetid://123456789"
+    else
+        toggle.image = "rbxassetid://0"
+    end
+end)
+
+local execbtn = instance.new("textbutton")
+execbtn.size = udim2.new(0.5,-10,0,30)
+execbtn.position = udim2.new(0.25,0,0,220)
+execbtn.text = "log environment"
+execbtn.backgroundcolor3 = color3.new(0.6,0.8,1)
+execbtn.textcolor3 = color3.new(0,0,0)
+execbtn.parent = mainframe
+
+local outputframe = instance.new("frame")
+outputframe.size = udim2.new(1,-10,1,-280)
+outputframe.position = udim2.new(0,5,0,260)
+outputframe.backgroundcolor3 = color3.new(0.95,0.95,0.95)
+outputframe.parent = mainframe
+
+local outputbox = instance.new("textbox")
+outputbox.size = udim2.new(1,0,1,0)
+outputbox.backgroundtransparency = 1
+outputbox.textcolor3 = color3.new(0,0,0)
+outputbox.text = ""
+outputbox.cleartextonfocus = false
+outputbox.multiline = true
+outputbox.readonly = true
+outputbox.parent = outputframe
+
+local outbtnframe = instance.new("frame")
+outbtnframe.size = udim2.new(1,-10,0,30)
+outbtnframe.position = udim2.new(0,5,0,-30)
+outbtnframe.backgroundtransparency = 1
+outbtnframe.parent = mainframe
+
+local copybtn = instance.new("textbutton")
+copybtn.size = udim2.new(0.5,-5,1,0)
+copybtn.position = udim2.new(0,0,0,0)
+copybtn.text = "copy"
+copybtn.backgroundcolor3 = color3.new(0.8,0.8,0.8)
+copybtn.parent = outbtnframe
+
+local savebtn = instance.new("textbutton")
+savebtn.size = udim2.new(0.5,-5,1,0)
+savebtn.position = udim2.new(0.5,0,0,0)
+savebtn.text = "save as file"
+savebtn.backgroundcolor3 = color3.new(0.8,0.8,0.8)
+savebtn.parent = outbtnframe
+
+local selectedmode = 1
+mode1.mousebutton1click:connect(function()
+    selectedmode = 1
+    mode1.backgroundcolor3 = color3.new(0.7,0.9,1)
+    mode2.backgroundcolor3 = color3.new(0.9,0.9,0.9)
+    inputbox.placeholdertext = "paste obf script here"
+end)
+mode2.mousebutton1click:connect(function()
+    selectedmode = 2
+    mode2.backgroundcolor3 = color3.new(0.7,0.9,1)
+    mode1.backgroundcolor3 = color3.new(0.9,0.9,0.9)
+    inputbox.placeholdertext = "paste obf script raw link here"
+end)
+mode1.backgroundcolor3 = color3.new(0.7,0.9,1)
+
+local logs = {}
+local function addlog(...)
+    local parts = {}
+    for i=1, select('#', ...) do
+        parts[i] = tostring(select(i, ...))
+    end
+    local str = table.concat(parts, " ")
+    table.insert(logs, str)
+end
+
+local function getlogtext()
+    return table.concat(logs, "\n")
+end
+
+local function uploadtext(text)
+    local success, result = pcall(function()
+        return http:postasync("https://hastebin.com/documents", text, enum.httpcontenttype.textplain)
+    end)
+    if success and result then
+        local data = http:jsondecode(result)
+        if data and data.key then
+            return "https://hastebin.com/" .. data.key
+        end
+    end
+    return nil
+end
+
+local function showoutput(text)
+    outputbox.text = text
+    if #text > 10000 then
+        local link = uploadtext(text)
+        if link then
+            outputbox.text = "output too long, uploaded to: " .. link
+        else
+            outputbox.text = "output too long and upload failed. showing truncated:\n" .. text:sub(1, 10000)
+        end
+    end
+end
+
+copybtn.mousebutton1click:connect(function()
+    local text = outputbox.text
+    if text and text ~= "" then
+        setclipboard(text)
+    end
+end)
+
+savebtn.mousebutton1click:connect(function()
+    local text = outputbox.text
+    if text and text ~= "" then
+        if writefile then
+            local filename = "envlog_" .. tostring(os.time()) .. ".txt"
+            writefile(filename, text)
+            print("saved to " .. filename)
+        else
+            print("writefile not available")
+        end
+    end
+end)
+
+local function makeenv()
+    local realenv = getfenv(0)
+    local env = {}
+    local logcalls = ison
+
+    local function wrapfunc(f, name)
+        return function(...)
+            if logcalls then
+                addlog("call " .. name .. "(" .. table.concat({...}, ", ") .. ")")
+            end
+            return f(...)
+        end
+    end
+
+    local function wrapinstance(obj)
+        if type(obj) ~= "userdata" then return obj end
+        local proxy = setmetatable({}, {
+            __index = function(t, k)
+                local val = obj[k]
+                if type(val) == "function" then
+                    return function(...)
+                        if logcalls then
+                            addlog("method " .. tostring(k) .. " on " .. tostring(obj) .. "(" .. table.concat({...}, ", ") .. ")")
+                        end
+                        return val(obj, ...)
+                    end
+                else
+                    if logcalls then
+                        addlog("read property " .. tostring(k) .. " = " .. tostring(val) .. " on " .. tostring(obj))
+                    end
+                    return val
+                end
+            end,
+            __newindex = function(t, k, v)
+                if logcalls then
+                    addlog("set property " .. tostring(k) .. " = " .. tostring(v) .. " on " .. tostring(obj))
+                end
+                obj[k] = v
+            end,
+            __tostring = function()
+                return tostring(obj)
+            end
+        })
+        return proxy
+    end
+
+    local wrappedglobals = {}
+
+    wrappedglobals.game = setmetatable({}, {
+        __index = function(t, k)
+            if k == "getservice" then
+                return function(service)
+                    addlog("game:getservice(" .. tostring(service) .. ")")
+                    return realenv.game:getservice(service)
+                end
+            else
+                return realenv.game[k]
+            end
+        end
+    })
+
+    wrappedglobals.instance = setmetatable({}, {
+        __index = function(t, k)
+            if k == "new" then
+                return function(classname, ...)
+                    addlog("instance.new(" .. tostring(classname) .. ")")
+                    local inst = realenv.instance.new(classname, ...)
+                    return wrapinstance(inst)
+                end
+            else
+                return realenv.instance[k]
+            end
+        end
+    })
+
+    local httpservice = realenv.game:getservice("httpservice")
+    wrappedglobals.httpservice = setmetatable({}, {
+        __index = function(t, k)
+            if k == "postasync" or k == "getasync" or k == "requestasync" then
+                return function(...)
+                    addlog("httpservice:" .. tostring(k) .. " called with args: " .. table.concat({...}, ", "))
+                    return httpservice[k](httpservice, ...)
+                end
+            else
+                return httpservice[k]
+            end
+        end
+    })
+
+    wrappedglobals.print = function(...)
+        addlog(...)
+        return realenv.print(...)
+    end
+    wrappedglobals.warn = function(...)
+        addlog("warn: ", ...)
+        return realenv.warn(...)
+    end
+    wrappedglobals.error = function(...)
+        addlog("error: ", ...)
+        return realenv.error(...)
+    end
+
+    wrappedglobals.loadstring = function(str, chunkname)
+        addlog("loadstring called, chunk: " .. tostring(str))
+        local func, err = realenv.loadstring(str, chunkname)
+        if func then
+            setfenv(func, env)
+            return func
+        else
+            return nil, err
+        end
+    end
+
+    wrappedglobals.require = function(module)
+        addlog("require(" .. tostring(module) .. ")")
+        return realenv.require(module)
+    end
+
+    wrappedglobals.pcall = function(f, ...)
+        addlog("pcall")
+        return realenv.pcall(f, ...)
+    end
+    wrappedglobals.xpcall = function(f, errhandler)
+        addlog("xpcall")
+        return realenv.xpcall(f, errhandler)
+    end
+
+    setmetatable(env, {
+        __index = function(t, k)
+            local w = wrappedglobals[k]
+            if w ~= nil then return w end
+            local val = realenv[k]
+            if type(val) == "userdata" and val.isa then
+                return wrapinstance(val)
+            end
+            return val
+        end,
+        __newindex = function(t, k, v)
+            addlog("global set " .. tostring(k) .. " = " .. tostring(v))
+            rawset(t, k, v)
+        end
+    })
+
+    return env
+end
+
+local function executescript(src)
+    logs = {}
+    local env = makeenv()
+    local func, err = loadstring(src, "axomicenvlogger")
+    if not func then
+        addlog("loadstring error: " .. tostring(err))
+        showoutput(getlogtext())
+        return
+    end
+    setfenv(func, env)
+    local success, result = pcall(func)
+    if not success then
+        addlog("execution error: " .. tostring(result))
+    end
+    showoutput(getlogtext())
+end
+
+execbtn.mousebutton1click:connect(function()
+    local src = inputbox.text
+    if src == "" then return end
+    if selectedmode == 2 then
+        local link = src
+        local success, content = pcall(function()
+            return http:getasync(link)
+        end)
+        if success and content then
+            src = content
+        else
+            addlog("failed to fetch link: " .. tostring(content))
+            showoutput(getlogtext())
+            return
+        end
+    end
+    executescript(src)
+end)
+
+showoutput("ready")
