@@ -51,7 +51,7 @@ local states = {
 
 local window = WindUI:CreateWindow({
 	Title = "AXOMIC - Animal Hospital Anomaly Script",
-	Author = "by Mighty",
+	Author = "by Axom [https://discord.gg/Sps39CydcZ]",
 	Folder = "axomic",
 	Icon = "hospital",
 	Theme = "Dark",
