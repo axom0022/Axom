@@ -28,7 +28,6 @@ local states = {
 	autopromptaura = false,
 	promptrange = 15,
 	antijumpscare = false,
-	vipunlocked = false,
 	godmodeinfection = false,
 	autocleanhazards = false,
 	anomalykillaura = false,
@@ -51,7 +50,7 @@ local states = {
 
 local window = WindUI:CreateWindow({
 	Title = "AXOMIC - Animal Hospital Anomaly Script",
-	Author = "by Axom [https://discord.gg/Sps39CydcZ]",
+	Author = "by axom",
 	Folder = "axomic",
 	Icon = "hospital",
 	Theme = "Dark",
@@ -102,6 +101,60 @@ worldtab:Toggle({ Title = "Instant Proximity Interact", Callback = function(stat
 worldtab:Toggle({ Title = "Auto-Aura Interact Prompts", Callback = function(state) states.autopromptaura = state end })
 worldtab:Slider({ Title = "Aura Prompt Range", Min = 5, Max = 50, Default = states.promptrange, Callback = function(value) states.promptrange = value end })
 worldtab:Toggle({ Title = "Anti-Jumpscare Shield", Callback = function(state) states.antijumpscare = state end })
+worldtab:Toggle({ Title = "God Mode & Infection Immunity", Callback = function(state) states.godmodeinfection = state end })
+worldtab:Toggle({ Title = "Auto-Clean Slime & Hazards", Callback = function(state) states.autocleanhazards = state end })
+worldtab:Toggle({ Title = "Anomaly Kill Aura", Callback = function(state) states.anomalykillaura = state end })
+worldtab:Slider({ Title = "Anomaly Kill Aura Range", Min = 10, Max = 80, Default = states.killaurarange, Callback = function(value) states.killaurarange = value end })
+worldtab:Toggle({ Title = "Auto-Collect All Medical Supplies", Callback = function(state) states.autocollectmeds = state end })
+worldtab:Toggle({ Title = "Ghost Mode (Invisible to Monsters)", Callback = function(state)
+	states.ghostmodemonsters = state
+	local char = localplayer.Character
+	if char then
+		for _, part in pairs(char:GetDescendants()) do
+			if part:IsA("BasePart") or part:IsA("Decal") then part.Transparency = state and 1 or 0 end
+		end
+	end
+end })
+worldtab:Toggle({ Title = "Instant Safe & Lock Cracker", Callback = function(state) states.instantsafecracker = state end })
+worldtab:Toggle({ Title = "Smart Diagnosis X-Ray", Callback = function(state) states.smartdiagnosisxray = state end })
+worldtab:Toggle({ Title = "Auto-Equip Gun/Weapon on Threat", Callback = function(state) states.autoequipdefense = state end })
+worldtab:Toggle({ Title = "Infinite Syringe / Med Uses", Callback = function(state) states.infinitesyringeuse = state end })
+worldtab:Toggle({ Title = "Freeze Patient Health Degradation", Callback = function(state) states.nopatientdegradation = state end })
+worldtab:Slider({ Title = "Hospital Field of View Override", Min = 50, Max = 120, Default = states.customfov, Callback = function(value) states.customfov = value end })
+worldtab:Button({ Title = "Instant Cure All Nearby Animal Patients", Callback = function()
+	local char = localplayer.Character
+	local hrp = char and char:FindFirstChild("HumanoidRootPart")
+	if not hrp then return end
+	for _, obj in pairs(Workspace:GetDescendants()) do
+		if obj:IsA("Model") and obj ~= char then
+			local n = string.lower(obj.Name)
+			if string.find(n, "patient") or string.find(n, "animal") or obj:GetAttribute("IsPatient") then
+				for _, prompt in pairs(obj:GetDescendants()) do if prompt:IsA("ProximityPrompt") then fireproximityprompt(prompt) end end
+				pcall(function() obj:SetAttribute("Cured", true) obj:SetAttribute("Sickness", "None") obj:SetAttribute("Health", 100) end)
+			end
+		end
+	end
+end })
+worldtab:Button({ Title = "Destroy All Infected / Monster Mimics", Callback = function()
+	for _, obj in pairs(Workspace:GetDescendants()) do
+		if obj:IsA("Model") and obj ~= localplayer.Character then
+			local n = string.lower(obj.Name)
+			if string.find(n, "anomaly") or string.find(n, "mimic") or string.find(n, "monster") or string.find(n, "infected") or obj:GetAttribute("IsBad") then
+				obj:Destroy()
+			end
+		end
+	end
+end })
+worldtab:Button({ Title = "Remove All Locked Hospital Doors & Barriers", Callback = function()
+	for _, obj in pairs(Workspace:GetDescendants()) do
+		if obj:IsA("BasePart") then
+			local n = string.lower(obj.Name)
+			if string.find(n, "door") or string.find(n, "gate") or string.find(n, "lock") or string.find(n, "barrier") or string.find(n, "window") or string.find(n, "glass") then
+				obj:Destroy()
+			end
+		end
+	end
+end })
 
 local geartab = window:Tab({ Title = "Hospital Gear", Icon = "medkit" })
 local selectedtool = nil
@@ -126,78 +179,6 @@ geartab:Button({ Title = "Equip / Claim Selected Item", Callback = function()
 				clone.Parent = localplayer:WaitForChild("Backpack")
 			end
 		end)
-	end
-end })
-
-local viptab = window:Tab({ Title = "VIP 🔒", Icon = "crown" })
-viptab:Toggle({ Title = "God Mode & Infection Immunity", Callback = function(state) states.godmodeinfection = state end })
-viptab:Toggle({ Title = "Auto-Clean Slime & Hazards", Callback = function(state) states.autocleanhazards = state end })
-viptab:Toggle({ Title = "Anomaly Kill Aura", Callback = function(state) states.anomalykillaura = state end })
-viptab:Slider({ Title = "Anomaly Kill Aura Range", Min = 10, Max = 80, Default = states.killaurarange, Callback = function(value) states.killaurarange = value end })
-viptab:Toggle({ Title = "Auto-Collect All Medical Supplies", Callback = function(state) states.autocollectmeds = state end })
-viptab:Toggle({ Title = "Ghost Mode (Invisible to Monsters)", Callback = function(state)
-	states.ghostmodemonsters = state
-	local char = localplayer.Character
-	if char then
-		for _, part in pairs(char:GetDescendants()) do
-			if part:IsA("BasePart") or part:IsA("Decal") then part.Transparency = state and 1 or 0 end
-		end
-	end
-end })
-viptab:Toggle({ Title = "Instant Safe & Lock Cracker", Callback = function(state) states.instantsafecracker = state end })
-viptab:Toggle({ Title = "Smart Diagnosis X-Ray", Callback = function(state) states.smartdiagnosisxray = state end })
-viptab:Toggle({ Title = "Auto-Equip Gun/Weapon on Threat", Callback = function(state) states.autoequipdefense = state end })
-viptab:Toggle({ Title = "Infinite Syringe / Med Uses", Callback = function(state) states.infinitesyringeuse = state end })
-viptab:Toggle({ Title = "Freeze Patient Health Degradation", Callback = function(state) states.nopatientdegradation = state end })
-viptab:Slider({ Title = "Hospital Field of View Override", Min = 50, Max = 120, Default = states.customfov, Callback = function(value) states.customfov = value end })
-viptab:Button({ Title = "Instant Cure All Nearby Animal Patients", Callback = function()
-	local char = localplayer.Character
-	local hrp = char and char:FindFirstChild("HumanoidRootPart")
-	if not hrp then return end
-	for _, obj in pairs(Workspace:GetDescendants()) do
-		if obj:IsA("Model") and obj ~= char then
-			local n = string.lower(obj.Name)
-			if string.find(n, "patient") or string.find(n, "animal") or obj:GetAttribute("IsPatient") then
-				for _, prompt in pairs(obj:GetDescendants()) do if prompt:IsA("ProximityPrompt") then fireproximityprompt(prompt) end end
-				pcall(function() obj:SetAttribute("Cured", true) obj:SetAttribute("Sickness", "None") obj:SetAttribute("Health", 100) end)
-			end
-		end
-	end
-end })
-viptab:Button({ Title = "Teleport to Emergency Safe Room", Callback = function()
-	local char = localplayer.Character
-	local hrp = char and char:FindFirstChild("HumanoidRootPart")
-	if not hrp then return end
-	local safetarget = nil
-	for _, obj in pairs(Workspace:GetDescendants()) do
-		if obj:IsA("BasePart") then
-			local n = string.lower(obj.Name)
-			if string.find(n, "saferoom") or string.find(n, "security") or string.find(n, "lobby") or string.find(n, "spawn") then
-				safetarget = obj
-				break
-			end
-		end
-	end
-	if safetarget then hrp.CFrame = safetarget.CFrame + Vector3.new(0, 4, 0) else hrp.CFrame = CFrame.new(0, 50, 0) end
-end })
-viptab:Button({ Title = "Destroy All Infected / Monster Mimics", Callback = function()
-	for _, obj in pairs(Workspace:GetDescendants()) do
-		if obj:IsA("Model") and obj ~= localplayer.Character then
-			local n = string.lower(obj.Name)
-			if string.find(n, "anomaly") or string.find(n, "mimic") or string.find(n, "monster") or string.find(n, "infected") or obj:GetAttribute("IsBad") then
-				obj:Destroy()
-			end
-		end
-	end
-end })
-viptab:Button({ Title = "Remove All Locked Hospital Doors & Barriers", Callback = function()
-	for _, obj in pairs(Workspace:GetDescendants()) do
-		if obj:IsA("BasePart") then
-			local n = string.lower(obj.Name)
-			if string.find(n, "door") or string.find(n, "gate") or string.find(n, "lock") or string.find(n, "barrier") or string.find(n, "window") or string.find(n, "glass") then
-				obj:Destroy()
-			end
-		end
 	end
 end })
 
@@ -229,52 +210,22 @@ if rooms then
 	end
 end
 
-local function getbasepart(obj)
-	if obj:IsA("BasePart") then return obj end
-	local part = obj:FindFirstChildOfClass("BasePart")
-	if part then return part end
-	if obj:IsA("Model") then
-		local hrp = obj:FindFirstChild("HumanoidRootPart")
-		if hrp then return hrp end
-		local head = obj:FindFirstChild("Head")
-		if head then return head end
-	end
-	return nil
-end
-
-local function bringitem(index, itemname)
-	local parentcontainer = Workspace:GetChildren()[index]
-	if not parentcontainer then return end
-	local itemsfolder = parentcontainer:FindFirstChild("Items")
-	if not itemsfolder then return end
-	local item = itemsfolder:FindFirstChild(itemname)
-	if not item then return end
-	local pp = item:FindFirstChild("PP")
-	if not pp or not pp:IsA("ProximityPrompt") then return end
-	local teleporttarget = getbasepart(item)
-	if not teleporttarget then return end
+teleporttab:Button({ Title = "Teleport to Safe Room", Callback = function()
 	local char = localplayer.Character
 	local hrp = char and char:FindFirstChild("HumanoidRootPart")
 	if not hrp then return end
-	local orig = hrp.CFrame
-	hrp.CFrame = teleporttarget.CFrame + Vector3.new(0, 3, 0)
-	task.wait(0.1)
-	fireproximityprompt(pp)
-	task.wait(0.2)
-	hrp.CFrame = orig
-end
-
-local bringitems = {
-	{"Medkit", 14},
-	{"IV Drop", 24},
-	{"Thermo", 14},
-	{"Ointment", 37},
-	{"Bandages", 37},
-	{"EyeDrop", 24}
-}
-for _, info in pairs(bringitems) do
-	teleporttab:Button({ Title = "Bring " .. info[1], Callback = function() pcall(function() bringitem(info[2], info[1]) end) end })
-end
+	local safetarget = nil
+	for _, obj in pairs(Workspace:GetDescendants()) do
+		if obj:IsA("BasePart") then
+			local n = string.lower(obj.Name)
+			if string.find(n, "saferoom") or string.find(n, "security") or string.find(n, "lobby") or string.find(n, "spawn") then
+				safetarget = obj
+				break
+			end
+		end
+	end
+	if safetarget then hrp.CFrame = safetarget.CFrame + Vector3.new(0, 4, 0) else hrp.CFrame = CFrame.new(0, 50, 0) end
+end })
 
 teleporttab:Button({ Title = "Throw Item To Trash", Callback = function()
 	local char = localplayer.Character
@@ -294,13 +245,37 @@ teleporttab:Button({ Title = "Throw Item To Trash", Callback = function()
 	end
 end })
 
-teleporttab:Button({ Title = "Teleport To Office", Callback = function()
+local bringtab = window:Tab({ Title = "Bring", Icon = "hand" })
+local function bringitem(itemname)
 	local char = localplayer.Character
 	local hrp = char and char:FindFirstChild("HumanoidRootPart")
 	if not hrp then return end
-	local officepart = Workspace:GetChildren()[58]
-	if officepart and officepart:IsA("BasePart") then hrp.CFrame = officepart.CFrame + Vector3.new(0, 3, 0) end
-end })
+	local orig = hrp.CFrame
+	local foundprompt = nil
+	local foundpart = nil
+	for _, desc in pairs(Workspace:GetDescendants()) do
+		if desc:IsA("ProximityPrompt") and desc.Enabled then
+			local parent = desc.Parent
+			local pname = parent and parent.Name or ""
+			if string.find(string.lower(pname), string.lower(itemname)) then
+				foundprompt = desc
+				foundpart = findbasepartinobject(parent)
+				break
+			end
+		end
+	end
+	if not foundprompt or not foundpart then return end
+	hrp.CFrame = foundpart.CFrame + Vector3.new(0, 3, 0)
+	task.wait(0.1)
+	firepromptdirect(foundprompt)
+	task.wait(0.2)
+	hrp.CFrame = orig
+end
+
+local bringitems = {"Medkit", "IV Drop", "Thermo", "Ointment", "Bandages", "EyeDrop"}
+for _, name in pairs(bringitems) do
+	bringtab:Button({ Title = "Bring " .. name, Callback = function() pcall(function() bringitem(name) end) end })
+end
 
 local autotab = window:Tab({ Title = "Auto", Icon = "gear" })
 autotab:Toggle({ Title = "Auto Room 6 (X-Ray)", Callback = function(state) states.autoroomsix = state end })
@@ -316,6 +291,12 @@ settingstab:Button({ Title = "Apply Theme: Pro Blue", Callback = function() wind
 settingstab:Button({ Title = "Apply Theme: Crimson Emergency Red", Callback = function() window:SetAccent(Color3.fromRGB(210, 45, 45)) end })
 settingstab:Button({ Title = "Apply Theme: Midnight Purple", Callback = function() window:SetAccent(Color3.fromRGB(140, 50, 220)) end })
 settingstab:Button({ Title = "Apply Theme: Gold VIP", Callback = function() window:SetAccent(Color3.fromRGB(230, 170, 20)) end })
+
+local creditstab = window:Tab({ Title = "Credits", Icon = "info" })
+creditstab:Label({ Title = "this script were made by axom." })
+creditstab:Label({ Title = "Join our discord server and youtube channel to get more scripts!" })
+creditstab:Button({ Title = "YT - Copy Link", Callback = function() setclipboard("https://youtube.com/@axos0022") end })
+creditstab:Button({ Title = "Discord - Copy Link", Callback = function() setclipboard("https://discord.gg/Sps39CydcZ") end })
 
 local highlightfolder = Instance.new("Folder")
 highlightfolder.Name = "AnimalHospitalHighlights"
