@@ -7,9 +7,12 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CoreGui = game:GetService("CoreGui")
 
 local localplayer = Players.LocalPlayer
-local camera = Workspace.CurrentCamera
+local playergui = localplayer:WaitForChild("PlayerGui")
+local uicontainer = pcall(function() return CoreGui end) and CoreGui or playergui
 
-local Fluent = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Init.lua"))()
+local ismobile = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
+local scalefactor = ismobile and 1.25 or 1.0
+local basewidth, baseheight = 560 * scalefactor, 390 * scalefactor
 
 local states = {
 	walkspeed = 50,
@@ -48,85 +51,325 @@ local states = {
 	instantaction = false
 }
 
-local window = Fluent:CreateWindow({
-	Title = "AXOMIC - Animal Hospital Anomaly Script",
-	SubTitle = "by axom",
-	TabWidth = 160,
-	Size = UDim2.fromOffset(560, 390),
-	Acrylic = false,
-	Theme = "Dark",
-	MinimizeKey = Enum.KeyCode.RightShift
-})
+local currentaccent = Color3.fromRGB(40, 160, 110)
+local themeobjects = {}
+
+local function applytheme(newcolor)
+	currentaccent = newcolor
+	for _, obj in pairs(themeobjects) do
+		if obj.type == "background" then
+			obj.element.BackgroundColor3 = newcolor
+		elseif obj.type == "text" then
+			obj.element.TextColor3 = newcolor
+		elseif obj.type == "border" then
+			obj.element.BorderColor3 = newcolor
+		end
+	end
+end
+
+local highlightfolder = Instance.new("Folder")
+highlightfolder.Name = "AnimalHospitalHighlights"
+highlightfolder.Parent = uicontainer
+
+local function clearesp(esptype)
+	for _, child in ipairs(highlightfolder:GetChildren()) do
+		if child:GetAttribute("ESPType") == esptype then
+			child:Destroy()
+		end
+	end
+end
+
+local function createhighlight(target, esptype, fillcolor, outlinecolor)
+	if not target or (not target:IsA("Model") and not target:IsA("BasePart")) then return end
+	local targetid = target:GetDebugId()
+	local existing = highlightfolder:FindFirstChild(targetid)
+	if existing then
+		existing.FillColor = fillcolor
+		existing.OutlineColor = outlinecolor
+		return
+	end
+	local h = Instance.new("Highlight")
+	h.Name = targetid
+	h.Adornee = target
+	h.FillColor = fillcolor
+	h.OutlineColor = outlinecolor
+	h.FillTransparency = 0.35
+	h.OutlineTransparency = 0
+	h:SetAttribute("ESPType", esptype)
+	h.Parent = highlightfolder
+end
+
+local screengui = Instance.new("ScreenGui")
+screengui.Name = "AnimalHospitalProPanel"
+screengui.ResetOnSpawn = false
+screengui.Parent = uicontainer
+
+local openbtn = Instance.new("TextButton")
+openbtn.Name = "OpenButton"
+openbtn.Size = UDim2.new(0, 85 * scalefactor, 0, 35 * scalefactor)
+openbtn.Position = UDim2.new(0.02, 0, 0.22, 0)
+openbtn.BackgroundColor3 = Color3.fromRGB(20, 25, 22)
+openbtn.BorderColor3 = currentaccent
+openbtn.BorderSizePixel = 2
+openbtn.Text = "by axom"
+openbtn.TextColor3 = currentaccent
+openbtn.TextSize = 13 * scalefactor
+openbtn.Font = Enum.Font.GothamBold
+openbtn.Visible = false
+openbtn.Active = true
+openbtn.Draggable = true
+openbtn.Parent = screengui
+Instance.new("UICorner", openbtn).CornerRadius = UDim.new(0, 6)
+table.insert(themeobjects, {element = openbtn, type = "border"})
+table.insert(themeobjects, {element = openbtn, type = "text"})
+
+local mainframe = Instance.new("Frame")
+mainframe.Name = "MainFrame"
+mainframe.Size = UDim2.new(0, basewidth, 0, baseheight)
+mainframe.Position = UDim2.new(0.5, -basewidth / 2, 0.5, -baseheight / 2)
+mainframe.BackgroundColor3 = Color3.fromRGB(16, 20, 18)
+mainframe.BorderColor3 = Color3.fromRGB(30, 45, 38)
+mainframe.BorderSizePixel = 2
+mainframe.Active = true
+mainframe.Draggable = true
+mainframe.Parent = screengui
+Instance.new("UICorner", mainframe).CornerRadius = UDim.new(0, 10)
+
+local topbar = Instance.new("Frame")
+topbar.Size = UDim2.new(1, 0, 0, 42 * scalefactor)
+topbar.BackgroundColor3 = Color3.fromRGB(11, 15, 13)
+topbar.BorderSizePixel = 0
+topbar.Parent = mainframe
+Instance.new("UICorner", topbar).CornerRadius = UDim.new(0, 10)
+
+local toptitle = Instance.new("TextLabel")
+toptitle.Size = UDim2.new(0.85, 0, 1, 0)
+toptitle.Position = UDim2.new(0.03, 0, 0, 0)
+toptitle.BackgroundTransparency = 1
+toptitle.Text = "ANIMAL HOSPITAL [V.2]"
+toptitle.TextColor3 = currentaccent
+toptitle.TextSize = 14 * scalefactor
+toptitle.Font = Enum.Font.GothamBold
+toptitle.TextXAlignment = Enum.TextXAlignment.Left
+toptitle.Parent = topbar
+table.insert(themeobjects, {element = toptitle, type = "text"})
+
+local closebtn = Instance.new("TextButton")
+closebtn.Size = UDim2.new(0, 35 * scalefactor, 0, 30 * scalefactor)
+closebtn.Position = UDim2.new(1, -42 * scalefactor, 0.5, -15 * scalefactor)
+closebtn.BackgroundColor3 = Color3.fromRGB(210, 50, 50)
+closebtn.Text = "X"
+closebtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+closebtn.TextSize = 14 * scalefactor
+closebtn.Font = Enum.Font.GothamBold
+closebtn.Parent = topbar
+Instance.new("UICorner", closebtn).CornerRadius = UDim.new(0, 6)
+
+local sidebar = Instance.new("Frame")
+sidebar.Size = UDim2.new(0, 140 * scalefactor, 1, -42 * scalefactor)
+sidebar.Position = UDim2.new(0, 0, 0, 42 * scalefactor)
+sidebar.BackgroundColor3 = Color3.fromRGB(13, 17, 15)
+sidebar.BorderSizePixel = 0
+sidebar.Parent = mainframe
+
+local sidebarlayout = Instance.new("UIListLayout")
+sidebarlayout.SortOrder = Enum.SortOrder.LayoutOrder
+sidebarlayout.Padding = UDim.new(0, 6)
+sidebarlayout.Parent = sidebar
+Instance.new("UIPadding", sidebar).PaddingTop = UDim.new(0, 10)
+Instance.new("UIPadding", sidebar).PaddingLeft = UDim.new(0, 8)
+Instance.new("UIPadding", sidebar).PaddingRight = UDim.new(0, 8)
+
+local contentarea = Instance.new("Frame")
+contentarea.Size = UDim2.new(1, -150 * scalefactor, 1, -50 * scalefactor)
+contentarea.Position = UDim2.new(0, 145 * scalefactor, 0, 46 * scalefactor)
+contentarea.BackgroundColor3 = Color3.fromRGB(20, 24, 22)
+contentarea.BorderSizePixel = 0
+contentarea.Parent = mainframe
+Instance.new("UICorner", contentarea).CornerRadius = UDim.new(0, 8)
 
 local tabs = {}
+local activetabbtn = nil
 
-tabs.Movement = window:AddTab({ Title = "Movement", Icon = "walk" })
-tabs.Visuals = window:AddTab({ Title = "Visuals", Icon = "eye" })
-tabs.World = window:AddTab({ Title = "World", Icon = "globe" })
-tabs.Gear = window:AddTab({ Title = "Hospital Gear", Icon = "medkit" })
-tabs.Teleport = window:AddTab({ Title = "Teleport", Icon = "location" })
-tabs.Bring = window:AddTab({ Title = "Bring", Icon = "hand" })
-tabs.Auto = window:AddTab({ Title = "Auto", Icon = "gear" })
-tabs.Settings = window:AddTab({ Title = "Settings", Icon = "palette" })
-tabs.Credits = window:AddTab({ Title = "Credits", Icon = "info" })
-
-tabs.Movement:AddToggle("infstamina", { Title = "Infinite Stamina & Boost", Default = false, Callback = function(v) states.infstamina = v end })
-tabs.Movement:AddToggle("speedtoggle", { Title = "Speed Override Toggle", Default = false, Callback = function(v) states.speedtoggle = v end })
-tabs.Movement:AddSlider("walkspeed", { Title = "WalkSpeed Target", Min = 16, Max = 250, Default = 50, Rounding = 1, Callback = function(v) states.walkspeed = v end })
-tabs.Movement:AddToggle("jumpboost", { Title = "Jump Boost Override", Default = false, Callback = function(v) states.jumpboost = v end })
-tabs.Movement:AddSlider("jumppower", { Title = "JumpPower Target", Min = 50, Max = 300, Default = 100, Rounding = 1, Callback = function(v) states.jumppower = v end })
-tabs.Movement:AddToggle("noclip", { Title = "NoClip (Pass Walls)", Default = false, Callback = function(v) states.noclip = v end })
-tabs.Movement:AddToggle("godsanity", { Title = "Sanity Freeze (God Mode)", Default = false, Callback = function(v) states.godsanity = v end })
-
-tabs.Visuals:AddToggle("patientesp", { Title = "ESP Anomalies & Fake Patients", Default = false, Callback = function(v)
-	states.patientesp = v
-	if not v then
-		for _, child in ipairs(highlightfolder:GetChildren()) do if child:GetAttribute("ESPType") == "Patient" then child:Destroy() end end
+local function switchtab(tabbtn, tabframe)
+	for _, t in pairs(tabs) do
+		t.btn.BackgroundColor3 = Color3.fromRGB(28, 34, 30)
+		t.btn.TextColor3 = Color3.fromRGB(180, 190, 185)
+		t.frame.Visible = false
 	end
-end })
-tabs.Visuals:AddToggle("hospitalsanomalyesp", { Title = "ESP Hospital Slime/Hazards", Default = false, Callback = function(v)
-	states.hospitalsanomalyesp = v
-	if not v then
-		for _, child in ipairs(highlightfolder:GetChildren()) do if child:GetAttribute("ESPType") == "HospitalAnomaly" then child:Destroy() end end
-	end
-end })
-tabs.Visuals:AddToggle("itemsesp", { Title = "ESP Meds / Safes / Weapons", Default = false, Callback = function(v)
-	states.itemsesp = v
-	if not v then
-		for _, child in ipairs(highlightfolder:GetChildren()) do if child:GetAttribute("ESPType") == "Item" then child:Destroy() end end
-	end
-end })
-tabs.Visuals:AddToggle("fullbright", { Title = "Fullbright (No Dark Rooms)", Default = false, Callback = function(v)
-	states.fullbright = v
-	if not v then Lighting.Brightness = 1 Lighting.ClockTime = 14 end
-end })
-tabs.Visuals:AddToggle("nostatic", { Title = "Disable Static & Cam Grain", Default = false, Callback = function(v) states.nostatic = v end })
+	activetabbtn = tabbtn
+	tabbtn.BackgroundColor3 = currentaccent
+	tabbtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+	tabframe.Visible = true
+end
 
-tabs.World:AddToggle("fastinteract", { Title = "Instant Proximity Interact", Default = false, Callback = function(v) states.fastinteract = v end })
-tabs.World:AddToggle("autopromptaura", { Title = "Auto-Aura Interact Prompts", Default = false, Callback = function(v) states.autopromptaura = v end })
-tabs.World:AddSlider("promptrange", { Title = "Aura Prompt Range", Min = 5, Max = 50, Default = 15, Rounding = 1, Callback = function(v) states.promptrange = v end })
-tabs.World:AddToggle("antijumpscare", { Title = "Anti-Jumpscare Shield", Default = false, Callback = function(v) states.antijumpscare = v end })
-tabs.World:AddToggle("godmodeinfection", { Title = "God Mode & Infection Immunity", Default = false, Callback = function(v) states.godmodeinfection = v end })
-tabs.World:AddToggle("autocleanhazards", { Title = "Auto-Clean Slime & Hazards", Default = false, Callback = function(v) states.autocleanhazards = v end })
-tabs.World:AddToggle("anomalykillaura", { Title = "Anomaly Kill Aura", Default = false, Callback = function(v) states.anomalykillaura = v end })
-tabs.World:AddSlider("killaurarange", { Title = "Anomaly Kill Aura Range", Min = 10, Max = 80, Default = 25, Rounding = 1, Callback = function(v) states.killaurarange = v end })
-tabs.World:AddToggle("autocollectmeds", { Title = "Auto-Collect All Medical Supplies", Default = false, Callback = function(v) states.autocollectmeds = v end })
-tabs.World:AddToggle("ghostmodemonsters", { Title = "Ghost Mode (Invisible to Monsters)", Default = false, Callback = function(v)
-	states.ghostmodemonsters = v
+local function createtab(tabname, order)
+	local tabbtn = Instance.new("TextButton")
+	tabbtn.Size = UDim2.new(1, 0, 0, 35 * scalefactor)
+	tabbtn.BackgroundColor3 = Color3.fromRGB(28, 34, 30)
+	tabbtn.Text = tabname
+	tabbtn.TextColor3 = Color3.fromRGB(180, 190, 185)
+	tabbtn.TextSize = 13 * scalefactor
+	tabbtn.Font = Enum.Font.GothamSemibold
+	tabbtn.LayoutOrder = order
+	tabbtn.Parent = sidebar
+	Instance.new("UICorner", tabbtn).CornerRadius = UDim.new(0, 6)
+
+	local tabframe = Instance.new("ScrollingFrame")
+	tabframe.Size = UDim2.new(1, -16, 1, -16)
+	tabframe.Position = UDim2.new(0, 8, 0, 8)
+	tabframe.BackgroundTransparency = 1
+	tabframe.BorderSizePixel = 0
+	tabframe.ScrollBarThickness = 5
+	tabframe.Visible = false
+	tabframe.Parent = contentarea
+
+	local framelayout = Instance.new("UIListLayout")
+	framelayout.SortOrder = Enum.SortOrder.LayoutOrder
+	framelayout.Padding = UDim.new(0, 8)
+	framelayout.Parent = tabframe
+
+	tabbtn.MouseButton1Click:Connect(function()
+		switchtab(tabbtn, tabframe)
+	end)
+
+	table.insert(tabs, {btn = tabbtn, frame = tabframe})
+	if #tabs == 1 then
+		activetabbtn = tabbtn
+		tabbtn.BackgroundColor3 = currentaccent
+		tabbtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+		tabframe.Visible = true
+		table.insert(themeobjects, {element = tabbtn, type = "background"})
+	end
+
+	return tabframe, tabbtn
+end
+
+local function createstyledbutton(parenttab, labeltext, defaultcolor, callback)
+	local btn = Instance.new("TextButton")
+	btn.Size = UDim2.new(1, -6, 0, 38 * scalefactor)
+	btn.BackgroundColor3 = defaultcolor or Color3.fromRGB(34, 40, 36)
+	btn.Text = labeltext
+	btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+	btn.TextSize = 13 * scalefactor
+	btn.Font = Enum.Font.GothamMedium
+	btn.Parent = parenttab
+	Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
+
+	if callback then
+		btn.MouseButton1Click:Connect(function()
+			callback(btn)
+		end)
+	end
+	return btn
+end
+
+local function createtoggle(parenttab, labeltext, statekey, callback)
+	local btn = createstyledbutton(parenttab, labeltext .. ": [OFF]", Color3.fromRGB(34, 40, 36))
+	btn.MouseButton1Click:Connect(function()
+		states[statekey] = not states[statekey]
+		btn.BackgroundColor3 = states[statekey] and Color3.fromRGB(40, 150, 70) or Color3.fromRGB(34, 40, 36)
+		btn.Text = labeltext .. ": " .. (states[statekey] and "[ON]" or "[OFF]")
+		if callback then callback(states[statekey]) end
+	end)
+	return btn
+end
+
+local function createslider(parenttab, labeltext, statekey, minval, maxval, step)
+	local container = Instance.new("Frame")
+	container.Size = UDim2.new(1, -6, 0, 42 * scalefactor)
+	container.BackgroundColor3 = Color3.fromRGB(28, 34, 30)
+	container.Parent = parenttab
+	Instance.new("UICorner", container).CornerRadius = UDim.new(0, 6)
+
+	local label = Instance.new("TextLabel")
+	label.Size = UDim2.new(0.55, 0, 1, 0)
+	label.Position = UDim2.new(0.04, 0, 0, 0)
+	label.BackgroundTransparency = 1
+	label.Text = labeltext .. ": " .. states[statekey]
+	label.TextColor3 = Color3.fromRGB(255, 255, 255)
+	label.TextSize = 13 * scalefactor
+	label.Font = Enum.Font.GothamMedium
+	label.TextXAlignment = Enum.TextXAlignment.Left
+	label.Parent = container
+
+	local lessbtn = Instance.new("TextButton")
+	lessbtn.Size = UDim2.new(0, 34 * scalefactor, 0, 28 * scalefactor)
+	lessbtn.Position = UDim2.new(0.65, 0, 0.5, -14 * scalefactor)
+	lessbtn.BackgroundColor3 = Color3.fromRGB(48, 58, 52)
+	lessbtn.Text = "-"
+	lessbtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+	lessbtn.TextSize = 16 * scalefactor
+	lessbtn.Font = Enum.Font.GothamBold
+	lessbtn.Parent = container
+
+	local morebtn = Instance.new("TextButton")
+	morebtn.Size = UDim2.new(0, 34 * scalefactor, 0, 28 * scalefactor)
+	morebtn.Position = UDim2.new(0.82, 0, 0.5, -14 * scalefactor)
+	morebtn.BackgroundColor3 = Color3.fromRGB(48, 58, 52)
+	morebtn.Text = "+"
+	morebtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+	morebtn.TextSize = 16 * scalefactor
+	morebtn.Font = Enum.Font.GothamBold
+	morebtn.Parent = container
+
+	Instance.new("UICorner", lessbtn).CornerRadius = UDim.new(0, 6)
+	Instance.new("UICorner", morebtn).CornerRadius = UDim.new(0, 6)
+
+	lessbtn.MouseButton1Click:Connect(function()
+		states[statekey] = math.clamp(states[statekey] - step, minval, maxval)
+		label.Text = labeltext .. ": " .. states[statekey]
+	end)
+
+	morebtn.MouseButton1Click:Connect(function()
+		states[statekey] = math.clamp(states[statekey] + step, minval, maxval)
+		label.Text = labeltext .. ": " .. states[statekey]
+	end)
+end
+
+local movetab = createtab("Movement", 1)
+createtoggle(movetab, "Infinite Stamina & Boost", "infstamina")
+createtoggle(movetab, "Speed Override Toggle", "speedtoggle")
+createslider(movetab, "WalkSpeed Target", "walkspeed", 16, 250, 10)
+createtoggle(movetab, "Jump Boost Override", "jumpboost")
+createslider(movetab, "JumpPower Target", "jumppower", 50, 300, 25)
+createtoggle(movetab, "NoClip (Pass Walls)", "noclip")
+createtoggle(movetab, "Sanity Freeze (God Mode)", "godsanity")
+
+local visualstab = createtab("Visuals", 2)
+createtoggle(visualstab, "ESP Anomalies & Fake Patients", "patientesp", function(state) if not state then clearesp("Patient") end end)
+createtoggle(visualstab, "ESP Hospital Slime/Hazards", "hospitalsanomalyesp", function(state) if not state then clearesp("HospitalAnomaly") end end)
+createtoggle(visualstab, "ESP Meds / Safes / Weapons", "itemsesp", function(state) if not state then clearesp("Item") end end)
+createtoggle(visualstab, "Fullbright (No Dark Rooms)", "fullbright", function(state) if not state then Lighting.Brightness = 1 Lighting.ClockTime = 14 end end)
+createtoggle(visualstab, "Disable Static & Cam Grain", "nostatic")
+
+local worldtab = createtab("World", 3)
+createtoggle(worldtab, "Instant Proximity Interact", "fastinteract")
+createtoggle(worldtab, "Auto-Aura Interact Prompts", "autopromptaura")
+createslider(worldtab, "Aura Prompt Range", "promptrange", 5, 50, 5)
+createtoggle(worldtab, "Anti-Jumpscare Shield", "antijumpscare")
+createtoggle(worldtab, "God Mode & Infection Immunity", "godmodeinfection")
+createtoggle(worldtab, "Auto-Clean Slime & Hazards", "autocleanhazards")
+createtoggle(worldtab, "Anomaly Kill Aura", "anomalykillaura")
+createslider(worldtab, "Anomaly Kill Aura Range", "killaurarange", 10, 80, 5)
+createtoggle(worldtab, "Auto-Collect All Medical Supplies", "autocollectmeds")
+createtoggle(worldtab, "Ghost Mode (Invisible to Monsters)", "ghostmodemonsters", function(state)
 	local char = localplayer.Character
 	if char then
 		for _, part in pairs(char:GetDescendants()) do
-			if part:IsA("BasePart") or part:IsA("Decal") then part.Transparency = v and 1 or 0 end
+			if part:IsA("BasePart") or part:IsA("Decal") then
+				part.Transparency = state and 1 or 0
+			end
 		end
 	end
-end })
-tabs.World:AddToggle("instantsafecracker", { Title = "Instant Safe & Lock Cracker", Default = false, Callback = function(v) states.instantsafecracker = v end })
-tabs.World:AddToggle("smartdiagnosisxray", { Title = "Smart Diagnosis X-Ray", Default = false, Callback = function(v) states.smartdiagnosisxray = v end })
-tabs.World:AddToggle("autoequipdefense", { Title = "Auto-Equip Gun/Weapon on Threat", Default = false, Callback = function(v) states.autoequipdefense = v end })
-tabs.World:AddToggle("infinitesyringeuse", { Title = "Infinite Syringe / Med Uses", Default = false, Callback = function(v) states.infinitesyringeuse = v end })
-tabs.World:AddToggle("nopatientdegradation", { Title = "Freeze Patient Health Degradation", Default = false, Callback = function(v) states.nopatientdegradation = v end })
-tabs.World:AddSlider("customfov", { Title = "Hospital Field of View Override", Min = 50, Max = 120, Default = 70, Rounding = 1, Callback = function(v) states.customfov = v end })
-tabs.World:AddButton("curepatients", { Title = "Instant Cure All Nearby Animal Patients", Callback = function()
+end)
+createtoggle(worldtab, "Instant Safe & Lock Cracker", "instantsafecracker")
+createtoggle(worldtab, "Smart Diagnosis X-Ray", "smartdiagnosisxray")
+createtoggle(worldtab, "Auto-Equip Gun/Weapon on Threat", "autoequipdefense")
+createtoggle(worldtab, "Infinite Syringe / Med Uses", "infinitesyringeuse")
+createtoggle(worldtab, "Freeze Patient Health Degradation", "nopatientdegradation")
+createslider(worldtab, "Hospital Field of View Override", "customfov", 50, 120, 5)
+createstyledbutton(worldtab, "Instant Cure All Nearby Animal Patients", Color3.fromRGB(40, 150, 70), function()
 	local char = localplayer.Character
 	local hrp = char and char:FindFirstChild("HumanoidRootPart")
 	if not hrp then return end
@@ -134,13 +377,21 @@ tabs.World:AddButton("curepatients", { Title = "Instant Cure All Nearby Animal P
 		if obj:IsA("Model") and obj ~= char then
 			local n = string.lower(obj.Name)
 			if string.find(n, "patient") or string.find(n, "animal") or obj:GetAttribute("IsPatient") then
-				for _, prompt in pairs(obj:GetDescendants()) do if prompt:IsA("ProximityPrompt") then fireproximityprompt(prompt) end end
-				pcall(function() obj:SetAttribute("Cured", true) obj:SetAttribute("Sickness", "None") obj:SetAttribute("Health", 100) end)
+				for _, prompt in pairs(obj:GetDescendants()) do
+					if prompt:IsA("ProximityPrompt") then
+						fireproximityprompt(prompt)
+					end
+				end
+				pcall(function()
+					obj:SetAttribute("Cured", true)
+					obj:SetAttribute("Sickness", "None")
+					obj:SetAttribute("Health", 100)
+				end)
 			end
 		end
 	end
-end })
-tabs.World:AddButton("destroymimics", { Title = "Destroy All Infected / Monster Mimics", Callback = function()
+end)
+createstyledbutton(worldtab, "Destroy All Infected / Monster Mimics", Color3.fromRGB(180, 50, 50), function()
 	for _, obj in pairs(Workspace:GetDescendants()) do
 		if obj:IsA("Model") and obj ~= localplayer.Character then
 			local n = string.lower(obj.Name)
@@ -149,8 +400,8 @@ tabs.World:AddButton("destroymimics", { Title = "Destroy All Infected / Monster 
 			end
 		end
 	end
-end })
-tabs.World:AddButton("removedoors", { Title = "Remove All Locked Hospital Doors & Barriers", Callback = function()
+end)
+createstyledbutton(worldtab, "Remove All Locked Hospital Doors & Barriers", Color3.fromRGB(160, 110, 20), function()
 	for _, obj in pairs(Workspace:GetDescendants()) do
 		if obj:IsA("BasePart") then
 			local n = string.lower(obj.Name)
@@ -159,33 +410,100 @@ tabs.World:AddButton("removedoors", { Title = "Remove All Locked Hospital Doors 
 			end
 		end
 	end
-end })
+end)
 
+local geartab = createtab("Hospital Gear", 4)
 local selectedtool = nil
-tabs.Gear:AddDropdown("tooldropdown", { Title = "Select Tool", Values = {}, Multi = false, Default = 1, Callback = function(v) selectedtool = v end })
-tabs.Gear:AddButton("scantools", { Title = "Scan Hospital Meds & Tools", Callback = function()
-	local list = {}
+local detectedtoolslist = {}
+local dropdownopen = false
+
+local scanbtn = createstyledbutton(geartab, "🔄 Scan Hospital Meds & Tools", Color3.fromRGB(34, 40, 36))
+local dropdownbtn = createstyledbutton(geartab, "Select Tool: [Click to Open Dropdown] ▼", Color3.fromRGB(34, 40, 36))
+
+local dropdowncontainer = Instance.new("ScrollingFrame")
+dropdowncontainer.Size = UDim2.new(1, -6, 0, 130 * scalefactor)
+dropdowncontainer.BackgroundColor3 = Color3.fromRGB(22, 26, 24)
+dropdowncontainer.BorderSizePixel = 1
+dropdowncontainer.BorderColor3 = Color3.fromRGB(45, 60, 50)
+dropdowncontainer.ScrollBarThickness = 6
+dropdowncontainer.Visible = false
+dropdowncontainer.Parent = geartab
+Instance.new("UICorner", dropdowncontainer).CornerRadius = UDim.new(0, 6)
+
+local dropdownlayout = Instance.new("UIListLayout")
+dropdownlayout.Padding = UDim.new(0, 4)
+dropdownlayout.Parent = dropdowncontainer
+Instance.new("UIPadding", dropdowncontainer).PaddingTop = UDim.new(0, 4)
+Instance.new("UIPadding", dropdowncontainer).PaddingLeft = UDim.new(0, 4)
+
+local givebtn = createstyledbutton(geartab, "🎁 Equip / Claim Selected Item", Color3.fromRGB(40, 150, 70))
+
+local function populatedropdown()
+	for _, child in pairs(dropdowncontainer:GetChildren()) do
+		if child:IsA("TextButton") then child:Destroy() end
+	end
+	detectedtoolslist = {}
 	for _, place in pairs({Workspace, ReplicatedStorage, Lighting}) do
 		pcall(function()
 			for _, item in pairs(place:GetDescendants()) do
-				if item:IsA("Tool") then table.insert(list, item.Name) end
+				if item:IsA("Tool") then
+					table.insert(detectedtoolslist, item)
+				end
 			end
 		end)
 	end
-	tabs.Gear:Get("tooldropdown"):SetValues(list)
-end })
-tabs.Gear:AddButton("claimtool", { Title = "Equip / Claim Selected Item", Callback = function()
+	for _, tool in pairs(detectedtoolslist) do
+		local itembtn = Instance.new("TextButton")
+		itembtn.Size = UDim2.new(1, -10, 0, 30 * scalefactor)
+		itembtn.BackgroundColor3 = Color3.fromRGB(34, 40, 36)
+		itembtn.Text = "  🩹 " .. tool.Name .. " (" .. tool.Parent.Name .. ")"
+		itembtn.TextColor3 = Color3.fromRGB(230, 230, 230)
+		itembtn.Font = Enum.Font.GothamMedium
+		itembtn.TextSize = 12 * scalefactor
+		itembtn.TextXAlignment = Enum.TextXAlignment.Left
+		itembtn.Parent = dropdowncontainer
+		Instance.new("UICorner", itembtn).CornerRadius = UDim.new(0, 4)
+		itembtn.MouseButton1Click:Connect(function()
+			selectedtool = tool
+			dropdownbtn.Text = "Selected Tool: [" .. tool.Name .. "] ▼"
+			dropdownopen = false
+			dropdowncontainer.Visible = false
+		end)
+	end
+	dropdowncontainer.CanvasSize = UDim2.new(0, 0, 0, #detectedtoolslist * 34)
+	if #detectedtoolslist == 0 then
+		dropdownbtn.Text = "No Meds Found (Click Scan First)"
+	end
+end
+
+scanbtn.MouseButton1Click:Connect(function()
+	scanbtn.Text = "🔄 Scanning Hospital Areas..."
+	populatedropdown()
+	task.wait(0.2)
+	scanbtn.Text = "🔄 Scan Hospital Meds & Tools (" .. #detectedtoolslist .. " Found)"
+end)
+
+dropdownbtn.MouseButton1Click:Connect(function()
+	dropdownopen = not dropdownopen
+	dropdowncontainer.Visible = dropdownopen
+	if dropdownopen and #detectedtoolslist == 0 then
+		populatedropdown()
+	end
+end)
+
+givebtn.MouseButton1Click:Connect(function()
 	if selectedtool then
 		pcall(function()
-			local tool = Workspace:FindFirstChild(selectedtool) or ReplicatedStorage:FindFirstChild(selectedtool)
-			if tool then
-				local clone = tool:Clone()
-				clone.Parent = localplayer:WaitForChild("Backpack")
-			end
+			local clone = selectedtool:Clone()
+			clone.Parent = localplayer:WaitForChild("Backpack")
 		end)
+		if selectedtool.Parent and selectedtool:IsDescendantOf(Workspace) then
+			pcall(function() selectedtool.Parent = localplayer.Character end)
+		end
 	end
-end })
+end)
 
+local teleporttab = createtab("Teleport", 5)
 local function teleportto(targetpart)
 	local char = localplayer.Character
 	local hrp = char and char:FindFirstChild("HumanoidRootPart")
@@ -205,7 +523,9 @@ if rooms then
 				if minigame then
 					local bed = minigame:FindFirstChild("Bed")
 					if bed and bed:IsA("BasePart") then
-						tabs.Teleport:AddButton("room" .. i, { Title = "Room" .. i .. " - Bed", Callback = function() teleportto(bed) end })
+						createstyledbutton(teleporttab, "🚀 Room" .. i .. " - Bed", Color3.fromRGB(34, 40, 36), function()
+							teleportto(bed)
+						end)
 					end
 				end
 			end
@@ -213,7 +533,7 @@ if rooms then
 	end
 end
 
-tabs.Teleport:AddButton("saferoom", { Title = "Teleport to Safe Room", Callback = function()
+createstyledbutton(teleporttab, "🚀 Teleport to Safe Room", Color3.fromRGB(34, 40, 36), function()
 	local char = localplayer.Character
 	local hrp = char and char:FindFirstChild("HumanoidRootPart")
 	if not hrp then return end
@@ -227,10 +547,14 @@ tabs.Teleport:AddButton("saferoom", { Title = "Teleport to Safe Room", Callback 
 			end
 		end
 	end
-	if safetarget then hrp.CFrame = safetarget.CFrame + Vector3.new(0, 4, 0) else hrp.CFrame = CFrame.new(0, 50, 0) end
-end })
+	if safetarget then
+		hrp.CFrame = safetarget.CFrame + Vector3.new(0, 4, 0)
+	else
+		hrp.CFrame = CFrame.new(0, 50, 0)
+	end
+end)
 
-tabs.Teleport:AddButton("trash", { Title = "Throw Item To Trash", Callback = function()
+createstyledbutton(teleporttab, "🗑️ Throw Item To Trash", Color3.fromRGB(34, 40, 36), function()
 	local char = localplayer.Character
 	local hrp = char and char:FindFirstChild("HumanoidRootPart")
 	if not hrp then return end
@@ -242,12 +566,16 @@ tabs.Teleport:AddButton("trash", { Title = "Throw Item To Trash", Callback = fun
 		if handle and handle:IsA("BasePart") then
 			hrp.CFrame = handle.CFrame + Vector3.new(0, 3, 0)
 			task.wait(0.1)
-			if pp and pp:IsA("ProximityPrompt") then fireproximityprompt(pp) task.wait(0.2) end
+			if pp and pp:IsA("ProximityPrompt") then
+				fireproximityprompt(pp)
+				task.wait(0.2)
+			end
 			hrp.CFrame = orig
 		end
 	end
-end })
+end)
 
+local bringtab = createtab("Bring", 6)
 local function bringitem(itemname)
 	local char = localplayer.Character
 	local hrp = char and char:FindFirstChild("HumanoidRootPart")
@@ -276,64 +604,71 @@ end
 
 local bringitems = {"Medkit", "IV Drop", "Thermo", "Ointment", "Bandages", "EyeDrop"}
 for _, name in pairs(bringitems) do
-	tabs.Bring:AddButton("bring" .. name, { Title = "Bring " .. name, Callback = function() pcall(function() bringitem(name) end) end })
+	createstyledbutton(bringtab, "📦 Bring " .. name, Color3.fromRGB(34, 40, 36), function()
+		pcall(function() bringitem(name) end)
+	end)
 end
 
-tabs.Auto:AddToggle("autoroomsix", { Title = "Auto Room 6 (X-Ray)", Default = false, Callback = function(v) states.autoroomsix = v end })
-tabs.Auto:AddToggle("autoheal", { Title = "Auto Heal Patients 1-6", Default = false, Callback = function(v) states.autoheal = v end })
-tabs.Auto:AddToggle("autoprocess", { Title = "Auto Process Global", Default = false, Callback = function(v) states.autoprocess = v end })
-tabs.Auto:AddToggle("autoroomsixloop", { Title = "Auto Room 7 (Sleep Patient)", Default = false, Callback = function(v) states.autoroomsixloop = v end })
-tabs.Auto:AddToggle("autoroomeight", { Title = "Auto Room 8 (Sleep Patient)", Default = false, Callback = function(v) states.autoroomeight = v end })
-tabs.Auto:AddToggle("instantaction", { Title = "Instant Actions (HoldDuration 0)", Default = false, Callback = function(v) states.instantaction = v end })
+local autotab = createtab("Auto", 7)
+createtoggle(autotab, "Auto Room 6 (X-Ray)", "autoroomsix")
+createtoggle(autotab, "Auto Heal Patients 1-6", "autoheal")
+createtoggle(autotab, "Auto Process Global", "autoprocess")
+createtoggle(autotab, "Auto Room 7 (Sleep Patient)", "autoroomsixloop")
+createtoggle(autotab, "Auto Room 8 (Sleep Patient)", "autoroomeight")
+createtoggle(autotab, "Instant Actions (HoldDuration 0)", "instantaction")
 
-tabs.Settings:AddButton("themehospital", { Title = "Apply Theme: Hospital Green", Callback = function()
-	Fluent:SetTheme("Dark")
-	window:SetAccent(Color3.fromRGB(40, 160, 110))
-end })
-tabs.Settings:AddButton("themeblue", { Title = "Apply Theme: Pro Blue", Callback = function()
-	Fluent:SetTheme("Dark")
-	window:SetAccent(Color3.fromRGB(60, 95, 220))
-end })
-tabs.Settings:AddButton("themered", { Title = "Apply Theme: Crimson Emergency Red", Callback = function()
-	Fluent:SetTheme("Dark")
-	window:SetAccent(Color3.fromRGB(210, 45, 45))
-end })
-tabs.Settings:AddButton("themepurple", { Title = "Apply Theme: Midnight Purple", Callback = function()
-	Fluent:SetTheme("Dark")
-	window:SetAccent(Color3.fromRGB(140, 50, 220))
-end })
-tabs.Settings:AddButton("themegold", { Title = "Apply Theme: Gold VIP", Callback = function()
-	Fluent:SetTheme("Dark")
-	window:SetAccent(Color3.fromRGB(230, 170, 20))
-end })
-
-tabs.Credits:AddParagraph("creditpara", { Title = "Credits", Content = "this script were made by axom.\nJoin our discord server and youtube channel to get more scripts!" })
-tabs.Credits:AddButton("ytcopy", { Title = "📺 YT - Copy Link", Callback = function() setclipboard("https://youtube.com/@axos0022") end })
-tabs.Credits:AddButton("dccopy", { Title = "💬 Discord - Copy Link", Callback = function() setclipboard("https://discord.gg/Sps39CydcZ") end })
-
-local highlightfolder = Instance.new("Folder")
-highlightfolder.Name = "AnimalHospitalHighlights"
-highlightfolder.Parent = CoreGui
-
-local function createhighlight(target, esptype, fillcolor, outlinecolor)
-	if not target or (not target:IsA("Model") and not target:IsA("BasePart")) then return end
-	local targetid = target:GetDebugId()
-	local existing = highlightfolder:FindFirstChild(targetid)
-	if existing then
-		existing.FillColor = fillcolor
-		existing.OutlineColor = outlinecolor
-		return
-	end
-	local h = Instance.new("Highlight")
-	h.Name = targetid
-	h.Adornee = target
-	h.FillColor = fillcolor
-	h.OutlineColor = outlinecolor
-	h.FillTransparency = 0.35
-	h.OutlineTransparency = 0
-	h:SetAttribute("ESPType", esptype)
-	h.Parent = highlightfolder
+local settingstab = createtab("Settings", 8)
+local function createthemetoggle(name, color)
+	local tbtn = createstyledbutton(settingstab, "Apply Theme: " .. name, Color3.fromRGB(34, 40, 36))
+	tbtn.MouseButton1Click:Connect(function()
+		applytheme(color)
+		if activetabbtn then activetabbtn.BackgroundColor3 = color end
+	end)
 end
+createthemetoggle("Hospital Green (Default)", Color3.fromRGB(40, 160, 110))
+createthemetoggle("Pro Blue", Color3.fromRGB(60, 95, 220))
+createthemetoggle("Crimson Emergency Red", Color3.fromRGB(210, 45, 45))
+createthemetoggle("Midnight Purple", Color3.fromRGB(140, 50, 220))
+createthemetoggle("Gold VIP", Color3.fromRGB(230, 170, 20))
+
+local creditstab = createtab("Credits", 9)
+local creditlabel1 = Instance.new("TextLabel")
+creditlabel1.Size = UDim2.new(1, -12, 0, 30 * scalefactor)
+creditlabel1.Position = UDim2.new(0, 6, 0, 6)
+creditlabel1.BackgroundTransparency = 1
+creditlabel1.Text = "this script were made by axom."
+creditlabel1.TextColor3 = Color3.fromRGB(200, 200, 200)
+creditlabel1.TextSize = 13 * scalefactor
+creditlabel1.Font = Enum.Font.GothamMedium
+creditlabel1.TextWrapped = true
+creditlabel1.Parent = creditstab
+
+local creditlabel2 = Instance.new("TextLabel")
+creditlabel2.Size = UDim2.new(1, -12, 0, 30 * scalefactor)
+creditlabel2.Position = UDim2.new(0, 6, 0, 40 * scalefactor)
+creditlabel2.BackgroundTransparency = 1
+creditlabel2.Text = "Join our discord server and youtube channel to get more scripts!"
+creditlabel2.TextColor3 = Color3.fromRGB(200, 200, 200)
+creditlabel2.TextSize = 13 * scalefactor
+creditlabel2.Font = Enum.Font.GothamMedium
+creditlabel2.TextWrapped = true
+creditlabel2.Parent = creditstab
+
+createstyledbutton(creditstab, "📺 YT - Copy Link", Color3.fromRGB(34, 40, 36), function()
+	setclipboard("https://youtube.com/@axos0022")
+end)
+createstyledbutton(creditstab, "💬 Discord - Copy Link", Color3.fromRGB(34, 40, 36), function()
+	setclipboard("https://discord.gg/Sps39CydcZ")
+end)
+
+closebtn.MouseButton1Click:Connect(function()
+	mainframe.Visible = false
+	openbtn.Visible = true
+end)
+openbtn.MouseButton1Click:Connect(function()
+	mainframe.Visible = true
+	openbtn.Visible = false
+end)
 
 local function getcharacter() return localplayer.Character end
 local function gethumanoid()
@@ -368,7 +703,7 @@ local function lookatposition(targetposition)
 				local head = character:FindFirstChild("Head")
 				if head then
 					local campos = head.Position - (root.CFrame.LookVector * 4) + Vector3.new(0, 2, 0)
-					camera.CFrame = CFrame.lookAt(campos, targetposition)
+					Workspace.CurrentCamera.CFrame = CFrame.lookAt(campos, targetposition)
 				end
 			end
 		end)
