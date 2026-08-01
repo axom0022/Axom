@@ -9,7 +9,9 @@ local CoreGui = game:GetService("CoreGui")
 local localplayer = Players.LocalPlayer
 local camera = Workspace.CurrentCamera
 
-local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
+local Fluent = loadstring(game:HttpGetAsync("https://github.com/ActualMasterOogway/Fluent-Renewed/releases/latest/download/Fluent.luau"))()
+local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/ActualMasterOogway/Fluent-Renewed/refs/heads/main/Modules/SaveManager.lua"))()
+local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/ActualMasterOogway/Fluent-Renewed/refs/heads/main/Modules/InterfaceManager.lua"))()
 
 local states = {
 	walkspeed = 50,
@@ -48,80 +50,85 @@ local states = {
 	instantaction = false
 }
 
-local window = WindUI:CreateWindow({
+local window = Fluent:CreateWindow({
 	Title = "AXOMIC - Animal Hospital Anomaly Script",
-	Author = "by axom",
-	Folder = "axomic",
-	Icon = "hospital",
-	Theme = "Dark",
+	SubTitle = "by axom",
+	TabWidth = 160,
 	Size = UDim2.fromOffset(560, 390),
-	MinSize = Vector2.new(400, 300),
-	MaxSize = Vector2.new(800, 600),
-	ToggleKey = Enum.KeyCode.RightShift,
-	Resizable = true,
-	AutoScale = true,
+	Acrylic = false,
+	Theme = "Dark",
+	MinimizeKey = Enum.KeyCode.RightShift
 })
 
-local movetab = window:Tab({ Title = "Movement", Icon = "walk" })
-movetab:Toggle({ Title = "Infinite Stamina & Boost", Callback = function(state) states.infstamina = state end })
-movetab:Toggle({ Title = "Speed Override Toggle", Callback = function(state) states.speedtoggle = state end })
-movetab:Slider({ Title = "WalkSpeed Target", Min = 16, Max = 250, Default = states.walkspeed, Callback = function(value) states.walkspeed = value end })
-movetab:Toggle({ Title = "Jump Boost Override", Callback = function(state) states.jumpboost = state end })
-movetab:Slider({ Title = "JumpPower Target", Min = 50, Max = 300, Default = states.jumppower, Callback = function(value) states.jumppower = value end })
-movetab:Toggle({ Title = "NoClip (Pass Walls)", Callback = function(state) states.noclip = state end })
-movetab:Toggle({ Title = "Sanity Freeze (God Mode)", Callback = function(state) states.godsanity = state end })
+local tabs = {}
 
-local visualstab = window:Tab({ Title = "Visuals", Icon = "eye" })
-visualstab:Toggle({ Title = "ESP Anomalies & Fake Patients", Callback = function(state)
-	states.patientesp = state
-	if not state then
+tabs.Movement = window:AddTab({ Title = "Movement", Icon = "walk" })
+tabs.Visuals = window:AddTab({ Title = "Visuals", Icon = "eye" })
+tabs.World = window:AddTab({ Title = "World", Icon = "globe" })
+tabs.Gear = window:AddTab({ Title = "Hospital Gear", Icon = "medkit" })
+tabs.Teleport = window:AddTab({ Title = "Teleport", Icon = "location" })
+tabs.Bring = window:AddTab({ Title = "Bring", Icon = "hand" })
+tabs.Auto = window:AddTab({ Title = "Auto", Icon = "gear" })
+tabs.Settings = window:AddTab({ Title = "Settings", Icon = "palette" })
+tabs.Credits = window:AddTab({ Title = "Credits", Icon = "info" })
+
+tabs.Movement:AddToggle("infstamina", { Title = "Infinite Stamina & Boost", Default = false, Callback = function(v) states.infstamina = v end })
+tabs.Movement:AddToggle("speedtoggle", { Title = "Speed Override Toggle", Default = false, Callback = function(v) states.speedtoggle = v end })
+tabs.Movement:AddSlider("walkspeed", { Title = "WalkSpeed Target", Min = 16, Max = 250, Default = 50, Rounding = 1, Callback = function(v) states.walkspeed = v end })
+tabs.Movement:AddToggle("jumpboost", { Title = "Jump Boost Override", Default = false, Callback = function(v) states.jumpboost = v end })
+tabs.Movement:AddSlider("jumppower", { Title = "JumpPower Target", Min = 50, Max = 300, Default = 100, Rounding = 1, Callback = function(v) states.jumppower = v end })
+tabs.Movement:AddToggle("noclip", { Title = "NoClip (Pass Walls)", Default = false, Callback = function(v) states.noclip = v end })
+tabs.Movement:AddToggle("godsanity", { Title = "Sanity Freeze (God Mode)", Default = false, Callback = function(v) states.godsanity = v end })
+
+tabs.Visuals:AddToggle("patientesp", { Title = "ESP Anomalies & Fake Patients", Default = false, Callback = function(v)
+	states.patientesp = v
+	if not v then
 		for _, child in ipairs(highlightfolder:GetChildren()) do if child:GetAttribute("ESPType") == "Patient" then child:Destroy() end end
 	end
 end })
-visualstab:Toggle({ Title = "ESP Hospital Slime/Hazards", Callback = function(state)
-	states.hospitalsanomalyesp = state
-	if not state then
+tabs.Visuals:AddToggle("hospitalsanomalyesp", { Title = "ESP Hospital Slime/Hazards", Default = false, Callback = function(v)
+	states.hospitalsanomalyesp = v
+	if not v then
 		for _, child in ipairs(highlightfolder:GetChildren()) do if child:GetAttribute("ESPType") == "HospitalAnomaly" then child:Destroy() end end
 	end
 end })
-visualstab:Toggle({ Title = "ESP Meds / Safes / Weapons", Callback = function(state)
-	states.itemsesp = state
-	if not state then
+tabs.Visuals:AddToggle("itemsesp", { Title = "ESP Meds / Safes / Weapons", Default = false, Callback = function(v)
+	states.itemsesp = v
+	if not v then
 		for _, child in ipairs(highlightfolder:GetChildren()) do if child:GetAttribute("ESPType") == "Item" then child:Destroy() end end
 	end
 end })
-visualstab:Toggle({ Title = "Fullbright (No Dark Rooms)", Callback = function(state)
-	states.fullbright = state
-	if not state then Lighting.Brightness = 1 Lighting.ClockTime = 14 end
+tabs.Visuals:AddToggle("fullbright", { Title = "Fullbright (No Dark Rooms)", Default = false, Callback = function(v)
+	states.fullbright = v
+	if not v then Lighting.Brightness = 1 Lighting.ClockTime = 14 end
 end })
-visualstab:Toggle({ Title = "Disable Static & Cam Grain", Callback = function(state) states.nostatic = state end })
+tabs.Visuals:AddToggle("nostatic", { Title = "Disable Static & Cam Grain", Default = false, Callback = function(v) states.nostatic = v end })
 
-local worldtab = window:Tab({ Title = "World", Icon = "globe" })
-worldtab:Toggle({ Title = "Instant Proximity Interact", Callback = function(state) states.fastinteract = state end })
-worldtab:Toggle({ Title = "Auto-Aura Interact Prompts", Callback = function(state) states.autopromptaura = state end })
-worldtab:Slider({ Title = "Aura Prompt Range", Min = 5, Max = 50, Default = states.promptrange, Callback = function(value) states.promptrange = value end })
-worldtab:Toggle({ Title = "Anti-Jumpscare Shield", Callback = function(state) states.antijumpscare = state end })
-worldtab:Toggle({ Title = "God Mode & Infection Immunity", Callback = function(state) states.godmodeinfection = state end })
-worldtab:Toggle({ Title = "Auto-Clean Slime & Hazards", Callback = function(state) states.autocleanhazards = state end })
-worldtab:Toggle({ Title = "Anomaly Kill Aura", Callback = function(state) states.anomalykillaura = state end })
-worldtab:Slider({ Title = "Anomaly Kill Aura Range", Min = 10, Max = 80, Default = states.killaurarange, Callback = function(value) states.killaurarange = value end })
-worldtab:Toggle({ Title = "Auto-Collect All Medical Supplies", Callback = function(state) states.autocollectmeds = state end })
-worldtab:Toggle({ Title = "Ghost Mode (Invisible to Monsters)", Callback = function(state)
-	states.ghostmodemonsters = state
+tabs.World:AddToggle("fastinteract", { Title = "Instant Proximity Interact", Default = false, Callback = function(v) states.fastinteract = v end })
+tabs.World:AddToggle("autopromptaura", { Title = "Auto-Aura Interact Prompts", Default = false, Callback = function(v) states.autopromptaura = v end })
+tabs.World:AddSlider("promptrange", { Title = "Aura Prompt Range", Min = 5, Max = 50, Default = 15, Rounding = 1, Callback = function(v) states.promptrange = v end })
+tabs.World:AddToggle("antijumpscare", { Title = "Anti-Jumpscare Shield", Default = false, Callback = function(v) states.antijumpscare = v end })
+tabs.World:AddToggle("godmodeinfection", { Title = "God Mode & Infection Immunity", Default = false, Callback = function(v) states.godmodeinfection = v end })
+tabs.World:AddToggle("autocleanhazards", { Title = "Auto-Clean Slime & Hazards", Default = false, Callback = function(v) states.autocleanhazards = v end })
+tabs.World:AddToggle("anomalykillaura", { Title = "Anomaly Kill Aura", Default = false, Callback = function(v) states.anomalykillaura = v end })
+tabs.World:AddSlider("killaurarange", { Title = "Anomaly Kill Aura Range", Min = 10, Max = 80, Default = 25, Rounding = 1, Callback = function(v) states.killaurarange = v end })
+tabs.World:AddToggle("autocollectmeds", { Title = "Auto-Collect All Medical Supplies", Default = false, Callback = function(v) states.autocollectmeds = v end })
+tabs.World:AddToggle("ghostmodemonsters", { Title = "Ghost Mode (Invisible to Monsters)", Default = false, Callback = function(v)
+	states.ghostmodemonsters = v
 	local char = localplayer.Character
 	if char then
 		for _, part in pairs(char:GetDescendants()) do
-			if part:IsA("BasePart") or part:IsA("Decal") then part.Transparency = state and 1 or 0 end
+			if part:IsA("BasePart") or part:IsA("Decal") then part.Transparency = v and 1 or 0 end
 		end
 	end
 end })
-worldtab:Toggle({ Title = "Instant Safe & Lock Cracker", Callback = function(state) states.instantsafecracker = state end })
-worldtab:Toggle({ Title = "Smart Diagnosis X-Ray", Callback = function(state) states.smartdiagnosisxray = state end })
-worldtab:Toggle({ Title = "Auto-Equip Gun/Weapon on Threat", Callback = function(state) states.autoequipdefense = state end })
-worldtab:Toggle({ Title = "Infinite Syringe / Med Uses", Callback = function(state) states.infinitesyringeuse = state end })
-worldtab:Toggle({ Title = "Freeze Patient Health Degradation", Callback = function(state) states.nopatientdegradation = state end })
-worldtab:Slider({ Title = "Hospital Field of View Override", Min = 50, Max = 120, Default = states.customfov, Callback = function(value) states.customfov = value end })
-worldtab:Button({ Title = "Instant Cure All Nearby Animal Patients", Callback = function()
+tabs.World:AddToggle("instantsafecracker", { Title = "Instant Safe & Lock Cracker", Default = false, Callback = function(v) states.instantsafecracker = v end })
+tabs.World:AddToggle("smartdiagnosisxray", { Title = "Smart Diagnosis X-Ray", Default = false, Callback = function(v) states.smartdiagnosisxray = v end })
+tabs.World:AddToggle("autoequipdefense", { Title = "Auto-Equip Gun/Weapon on Threat", Default = false, Callback = function(v) states.autoequipdefense = v end })
+tabs.World:AddToggle("infinitesyringeuse", { Title = "Infinite Syringe / Med Uses", Default = false, Callback = function(v) states.infinitesyringeuse = v end })
+tabs.World:AddToggle("nopatientdegradation", { Title = "Freeze Patient Health Degradation", Default = false, Callback = function(v) states.nopatientdegradation = v end })
+tabs.World:AddSlider("customfov", { Title = "Hospital Field of View Override", Min = 50, Max = 120, Default = 70, Rounding = 1, Callback = function(v) states.customfov = v end })
+tabs.World:AddButton("curepatients", { Title = "Instant Cure All Nearby Animal Patients", Callback = function()
 	local char = localplayer.Character
 	local hrp = char and char:FindFirstChild("HumanoidRootPart")
 	if not hrp then return end
@@ -135,7 +142,7 @@ worldtab:Button({ Title = "Instant Cure All Nearby Animal Patients", Callback = 
 		end
 	end
 end })
-worldtab:Button({ Title = "Destroy All Infected / Monster Mimics", Callback = function()
+tabs.World:AddButton("destroymimics", { Title = "Destroy All Infected / Monster Mimics", Callback = function()
 	for _, obj in pairs(Workspace:GetDescendants()) do
 		if obj:IsA("Model") and obj ~= localplayer.Character then
 			local n = string.lower(obj.Name)
@@ -145,7 +152,7 @@ worldtab:Button({ Title = "Destroy All Infected / Monster Mimics", Callback = fu
 		end
 	end
 end })
-worldtab:Button({ Title = "Remove All Locked Hospital Doors & Barriers", Callback = function()
+tabs.World:AddButton("removedoors", { Title = "Remove All Locked Hospital Doors & Barriers", Callback = function()
 	for _, obj in pairs(Workspace:GetDescendants()) do
 		if obj:IsA("BasePart") then
 			local n = string.lower(obj.Name)
@@ -156,10 +163,9 @@ worldtab:Button({ Title = "Remove All Locked Hospital Doors & Barriers", Callbac
 	end
 end })
 
-local geartab = window:Tab({ Title = "Hospital Gear", Icon = "medkit" })
 local selectedtool = nil
-local dropdown = geartab:Dropdown({ Title = "Select Tool", Options = {}, Callback = function(option) selectedtool = option end })
-geartab:Button({ Title = "Scan Hospital Meds & Tools", Callback = function()
+tabs.Gear:AddDropdown("tooldropdown", { Title = "Select Tool", Values = {}, Multi = false, Default = 1, Callback = function(v) selectedtool = v end })
+tabs.Gear:AddButton("scantools", { Title = "Scan Hospital Meds & Tools", Callback = function()
 	local list = {}
 	for _, place in pairs({Workspace, ReplicatedStorage, Lighting}) do
 		pcall(function()
@@ -168,9 +174,9 @@ geartab:Button({ Title = "Scan Hospital Meds & Tools", Callback = function()
 			end
 		end)
 	end
-	dropdown:SetOptions(list)
+	tabs.Gear:Get("tooldropdown"):SetValues(list)
 end })
-geartab:Button({ Title = "Equip / Claim Selected Item", Callback = function()
+tabs.Gear:AddButton("claimtool", { Title = "Equip / Claim Selected Item", Callback = function()
 	if selectedtool then
 		pcall(function()
 			local tool = Workspace:FindFirstChild(selectedtool) or ReplicatedStorage:FindFirstChild(selectedtool)
@@ -182,7 +188,6 @@ geartab:Button({ Title = "Equip / Claim Selected Item", Callback = function()
 	end
 end })
 
-local teleporttab = window:Tab({ Title = "Teleport", Icon = "location" })
 local function teleportto(targetpart)
 	local char = localplayer.Character
 	local hrp = char and char:FindFirstChild("HumanoidRootPart")
@@ -202,7 +207,7 @@ if rooms then
 				if minigame then
 					local bed = minigame:FindFirstChild("Bed")
 					if bed and bed:IsA("BasePart") then
-						teleporttab:Button({ Title = "Room" .. i .. " - Bed", Callback = function() teleportto(bed) end })
+						tabs.Teleport:AddButton("room" .. i, { Title = "Room" .. i .. " - Bed", Callback = function() teleportto(bed) end })
 					end
 				end
 			end
@@ -210,7 +215,7 @@ if rooms then
 	end
 end
 
-teleporttab:Button({ Title = "Teleport to Safe Room", Callback = function()
+tabs.Teleport:AddButton("saferoom", { Title = "Teleport to Safe Room", Callback = function()
 	local char = localplayer.Character
 	local hrp = char and char:FindFirstChild("HumanoidRootPart")
 	if not hrp then return end
@@ -227,7 +232,7 @@ teleporttab:Button({ Title = "Teleport to Safe Room", Callback = function()
 	if safetarget then hrp.CFrame = safetarget.CFrame + Vector3.new(0, 4, 0) else hrp.CFrame = CFrame.new(0, 50, 0) end
 end })
 
-teleporttab:Button({ Title = "Throw Item To Trash", Callback = function()
+tabs.Teleport:AddButton("trash", { Title = "Throw Item To Trash", Callback = function()
 	local char = localplayer.Character
 	local hrp = char and char:FindFirstChild("HumanoidRootPart")
 	if not hrp then return end
@@ -245,7 +250,6 @@ teleporttab:Button({ Title = "Throw Item To Trash", Callback = function()
 	end
 end })
 
-local bringtab = window:Tab({ Title = "Bring", Icon = "hand" })
 local function bringitem(itemname)
 	local char = localplayer.Character
 	local hrp = char and char:FindFirstChild("HumanoidRootPart")
@@ -259,7 +263,7 @@ local function bringitem(itemname)
 			local pname = parent and parent.Name or ""
 			if string.find(string.lower(pname), string.lower(itemname)) then
 				foundprompt = desc
-				foundpart = findbasepartinobject(parent)
+				foundpart = desc.Parent:FindFirstChildOfClass("BasePart") or desc.Parent
 				break
 			end
 		end
@@ -274,29 +278,40 @@ end
 
 local bringitems = {"Medkit", "IV Drop", "Thermo", "Ointment", "Bandages", "EyeDrop"}
 for _, name in pairs(bringitems) do
-	bringtab:Button({ Title = "Bring " .. name, Callback = function() pcall(function() bringitem(name) end) end })
+	tabs.Bring:AddButton("bring" .. name, { Title = "Bring " .. name, Callback = function() pcall(function() bringitem(name) end) end })
 end
 
-local autotab = window:Tab({ Title = "Auto", Icon = "gear" })
-autotab:Toggle({ Title = "Auto Room 6 (X-Ray)", Callback = function(state) states.autoroomsix = state end })
-autotab:Toggle({ Title = "Auto Heal Patients 1-6", Callback = function(state) states.autoheal = state end })
-autotab:Toggle({ Title = "Auto Process Global", Callback = function(state) states.autoprocess = state end })
-autotab:Toggle({ Title = "Auto Room 7 (Sleep Patient)", Callback = function(state) states.autoroomsixloop = state end })
-autotab:Toggle({ Title = "Auto Room 8 (Sleep Patient)", Callback = function(state) states.autoroomeight = state end })
-autotab:Toggle({ Title = "Instant Actions (HoldDuration 0)", Callback = function(state) states.instantaction = state end })
+tabs.Auto:AddToggle("autoroomsix", { Title = "Auto Room 6 (X-Ray)", Default = false, Callback = function(v) states.autoroomsix = v end })
+tabs.Auto:AddToggle("autoheal", { Title = "Auto Heal Patients 1-6", Default = false, Callback = function(v) states.autoheal = v end })
+tabs.Auto:AddToggle("autoprocess", { Title = "Auto Process Global", Default = false, Callback = function(v) states.autoprocess = v end })
+tabs.Auto:AddToggle("autoroomsixloop", { Title = "Auto Room 7 (Sleep Patient)", Default = false, Callback = function(v) states.autoroomsixloop = v end })
+tabs.Auto:AddToggle("autoroomeight", { Title = "Auto Room 8 (Sleep Patient)", Default = false, Callback = function(v) states.autoroomeight = v end })
+tabs.Auto:AddToggle("instantaction", { Title = "Instant Actions (HoldDuration 0)", Default = false, Callback = function(v) states.instantaction = v end })
 
-local settingstab = window:Tab({ Title = "Settings", Icon = "palette" })
-settingstab:Button({ Title = "Apply Theme: Hospital Green", Callback = function() window:SetAccent(Color3.fromRGB(40, 160, 110)) end })
-settingstab:Button({ Title = "Apply Theme: Pro Blue", Callback = function() window:SetAccent(Color3.fromRGB(60, 95, 220)) end })
-settingstab:Button({ Title = "Apply Theme: Crimson Emergency Red", Callback = function() window:SetAccent(Color3.fromRGB(210, 45, 45)) end })
-settingstab:Button({ Title = "Apply Theme: Midnight Purple", Callback = function() window:SetAccent(Color3.fromRGB(140, 50, 220)) end })
-settingstab:Button({ Title = "Apply Theme: Gold VIP", Callback = function() window:SetAccent(Color3.fromRGB(230, 170, 20)) end })
+tabs.Settings:AddButton("themehospital", { Title = "Apply Theme: Hospital Green", Callback = function()
+	Fluent:SetTheme("Dark")
+	window:SetAccent(Color3.fromRGB(40, 160, 110))
+end })
+tabs.Settings:AddButton("themeblue", { Title = "Apply Theme: Pro Blue", Callback = function()
+	Fluent:SetTheme("Dark")
+	window:SetAccent(Color3.fromRGB(60, 95, 220))
+end })
+tabs.Settings:AddButton("themered", { Title = "Apply Theme: Crimson Emergency Red", Callback = function()
+	Fluent:SetTheme("Dark")
+	window:SetAccent(Color3.fromRGB(210, 45, 45))
+end })
+tabs.Settings:AddButton("themepurple", { Title = "Apply Theme: Midnight Purple", Callback = function()
+	Fluent:SetTheme("Dark")
+	window:SetAccent(Color3.fromRGB(140, 50, 220))
+end })
+tabs.Settings:AddButton("themegold", { Title = "Apply Theme: Gold VIP", Callback = function()
+	Fluent:SetTheme("Dark")
+	window:SetAccent(Color3.fromRGB(230, 170, 20))
+end })
 
-local creditstab = window:Tab({ Title = "Credits", Icon = "info" })
-creditstab:Label({ Title = "this script were made by axom." })
-creditstab:Label({ Title = "Join our discord server and youtube channel to get more scripts!" })
-creditstab:Button({ Title = "YT - Copy Link", Callback = function() setclipboard("https://youtube.com/@axos0022") end })
-creditstab:Button({ Title = "Discord - Copy Link", Callback = function() setclipboard("https://discord.gg/Sps39CydcZ") end })
+tabs.Credits:AddParagraph("creditpara", { Title = "Credits", Content = "this script were made by axom.\nJoin our discord server and youtube channel to get more scripts!" })
+tabs.Credits:AddButton("ytcopy", { Title = "📺 YT - Copy Link", Callback = function() setclipboard("https://youtube.com/@axos0022") end })
+tabs.Credits:AddButton("dccopy", { Title = "💬 Discord - Copy Link", Callback = function() setclipboard("https://discord.gg/Sps39CydcZ") end })
 
 local highlightfolder = Instance.new("Folder")
 highlightfolder.Name = "AnimalHospitalHighlights"
@@ -396,7 +411,10 @@ local function firepromptdirect(prompt)
 			local mouse = localplayer:GetMouse()
 			if mouse then
 				local part = findbasepartinobject(prompt.Parent)
-				if part then mouse.Target = part mouse.TargetClick:Fire() end
+				if part then
+					mouse.Target = part
+					mouse.TargetClick:Fire()
+				end
 			end
 		end)
 		if s3 then success = true end
