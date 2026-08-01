@@ -1,0 +1,1163 @@
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local Workspace = game:GetService("Workspace")
+local Lighting = game:GetService("Lighting")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local CoreGui = game:GetService("CoreGui")
+
+local localplayer = Players.LocalPlayer
+local camera = Workspace.CurrentCamera
+
+local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
+
+local states = {
+	walkspeed = 50,
+	speedtoggle = false,
+	infstamina = false,
+	jumpboost = false,
+	jumppower = 100,
+	noclip = false,
+	godsanity = false,
+	patientesp = false,
+	hospitalsanomalyesp = false,
+	itemsesp = false,
+	fullbright = false,
+	nostatic = false,
+	fastinteract = false,
+	autopromptaura = false,
+	promptrange = 15,
+	antijumpscare = false,
+	vipunlocked = false,
+	godmodeinfection = false,
+	autocleanhazards = false,
+	anomalykillaura = false,
+	killaurarange = 25,
+	autocollectmeds = false,
+	ghostmodemonsters = false,
+	instantsafecracker = false,
+	smartdiagnosisxray = false,
+	autoequipdefense = false,
+	infinitesyringeuse = false,
+	nopatientdegradation = false,
+	customfov = 70,
+	autoroomsix = false,
+	autoheal = false,
+	autoprocess = false,
+	autoroomsixloop = false,
+	autoroomeight = false,
+	instantaction = false
+}
+
+local window = WindUI:CreateWindow({
+	Title = "AXOMIC - Animal Hospital Anomaly Script",
+	Author = "by Mighty",
+	Folder = "axomic",
+	Icon = "hospital",
+	Theme = "Dark",
+	Size = UDim2.fromOffset(560, 390),
+	MinSize = Vector2.new(400, 300),
+	MaxSize = Vector2.new(800, 600),
+	ToggleKey = Enum.KeyCode.RightShift,
+	Resizable = true,
+	AutoScale = true,
+})
+
+local movetab = window:Tab({ Title = "Movement", Icon = "walk" })
+movetab:Toggle({ Title = "Infinite Stamina & Boost", Callback = function(state) states.infstamina = state end })
+movetab:Toggle({ Title = "Speed Override Toggle", Callback = function(state) states.speedtoggle = state end })
+movetab:Slider({ Title = "WalkSpeed Target", Min = 16, Max = 250, Default = states.walkspeed, Callback = function(value) states.walkspeed = value end })
+movetab:Toggle({ Title = "Jump Boost Override", Callback = function(state) states.jumpboost = state end })
+movetab:Slider({ Title = "JumpPower Target", Min = 50, Max = 300, Default = states.jumppower, Callback = function(value) states.jumppower = value end })
+movetab:Toggle({ Title = "NoClip (Pass Walls)", Callback = function(state) states.noclip = state end })
+movetab:Toggle({ Title = "Sanity Freeze (God Mode)", Callback = function(state) states.godsanity = state end })
+
+local visualstab = window:Tab({ Title = "Visuals", Icon = "eye" })
+visualstab:Toggle({ Title = "ESP Anomalies & Fake Patients", Callback = function(state)
+	states.patientesp = state
+	if not state then
+		for _, child in ipairs(highlightfolder:GetChildren()) do if child:GetAttribute("ESPType") == "Patient" then child:Destroy() end end
+	end
+end })
+visualstab:Toggle({ Title = "ESP Hospital Slime/Hazards", Callback = function(state)
+	states.hospitalsanomalyesp = state
+	if not state then
+		for _, child in ipairs(highlightfolder:GetChildren()) do if child:GetAttribute("ESPType") == "HospitalAnomaly" then child:Destroy() end end
+	end
+end })
+visualstab:Toggle({ Title = "ESP Meds / Safes / Weapons", Callback = function(state)
+	states.itemsesp = state
+	if not state then
+		for _, child in ipairs(highlightfolder:GetChildren()) do if child:GetAttribute("ESPType") == "Item" then child:Destroy() end end
+	end
+end })
+visualstab:Toggle({ Title = "Fullbright (No Dark Rooms)", Callback = function(state)
+	states.fullbright = state
+	if not state then Lighting.Brightness = 1 Lighting.ClockTime = 14 end
+end })
+visualstab:Toggle({ Title = "Disable Static & Cam Grain", Callback = function(state) states.nostatic = state end })
+
+local worldtab = window:Tab({ Title = "World", Icon = "globe" })
+worldtab:Toggle({ Title = "Instant Proximity Interact", Callback = function(state) states.fastinteract = state end })
+worldtab:Toggle({ Title = "Auto-Aura Interact Prompts", Callback = function(state) states.autopromptaura = state end })
+worldtab:Slider({ Title = "Aura Prompt Range", Min = 5, Max = 50, Default = states.promptrange, Callback = function(value) states.promptrange = value end })
+worldtab:Toggle({ Title = "Anti-Jumpscare Shield", Callback = function(state) states.antijumpscare = state end })
+
+local geartab = window:Tab({ Title = "Hospital Gear", Icon = "medkit" })
+local selectedtool = nil
+local dropdown = geartab:Dropdown({ Title = "Select Tool", Options = {}, Callback = function(option) selectedtool = option end })
+geartab:Button({ Title = "Scan Hospital Meds & Tools", Callback = function()
+	local list = {}
+	for _, place in pairs({Workspace, ReplicatedStorage, Lighting}) do
+		pcall(function()
+			for _, item in pairs(place:GetDescendants()) do
+				if item:IsA("Tool") then table.insert(list, item.Name) end
+			end
+		end)
+	end
+	dropdown:SetOptions(list)
+end })
+geartab:Button({ Title = "Equip / Claim Selected Item", Callback = function()
+	if selectedtool then
+		pcall(function()
+			local tool = Workspace:FindFirstChild(selectedtool) or ReplicatedStorage:FindFirstChild(selectedtool)
+			if tool then
+				local clone = tool:Clone()
+				clone.Parent = localplayer:WaitForChild("Backpack")
+			end
+		end)
+	end
+end })
+
+local viptab = window:Tab({ Title = "VIP 🔒", Icon = "crown" })
+viptab:Toggle({ Title = "God Mode & Infection Immunity", Callback = function(state) states.godmodeinfection = state end })
+viptab:Toggle({ Title = "Auto-Clean Slime & Hazards", Callback = function(state) states.autocleanhazards = state end })
+viptab:Toggle({ Title = "Anomaly Kill Aura", Callback = function(state) states.anomalykillaura = state end })
+viptab:Slider({ Title = "Anomaly Kill Aura Range", Min = 10, Max = 80, Default = states.killaurarange, Callback = function(value) states.killaurarange = value end })
+viptab:Toggle({ Title = "Auto-Collect All Medical Supplies", Callback = function(state) states.autocollectmeds = state end })
+viptab:Toggle({ Title = "Ghost Mode (Invisible to Monsters)", Callback = function(state)
+	states.ghostmodemonsters = state
+	local char = localplayer.Character
+	if char then
+		for _, part in pairs(char:GetDescendants()) do
+			if part:IsA("BasePart") or part:IsA("Decal") then part.Transparency = state and 1 or 0 end
+		end
+	end
+end })
+viptab:Toggle({ Title = "Instant Safe & Lock Cracker", Callback = function(state) states.instantsafecracker = state end })
+viptab:Toggle({ Title = "Smart Diagnosis X-Ray", Callback = function(state) states.smartdiagnosisxray = state end })
+viptab:Toggle({ Title = "Auto-Equip Gun/Weapon on Threat", Callback = function(state) states.autoequipdefense = state end })
+viptab:Toggle({ Title = "Infinite Syringe / Med Uses", Callback = function(state) states.infinitesyringeuse = state end })
+viptab:Toggle({ Title = "Freeze Patient Health Degradation", Callback = function(state) states.nopatientdegradation = state end })
+viptab:Slider({ Title = "Hospital Field of View Override", Min = 50, Max = 120, Default = states.customfov, Callback = function(value) states.customfov = value end })
+viptab:Button({ Title = "Instant Cure All Nearby Animal Patients", Callback = function()
+	local char = localplayer.Character
+	local hrp = char and char:FindFirstChild("HumanoidRootPart")
+	if not hrp then return end
+	for _, obj in pairs(Workspace:GetDescendants()) do
+		if obj:IsA("Model") and obj ~= char then
+			local n = string.lower(obj.Name)
+			if string.find(n, "patient") or string.find(n, "animal") or obj:GetAttribute("IsPatient") then
+				for _, prompt in pairs(obj:GetDescendants()) do if prompt:IsA("ProximityPrompt") then fireproximityprompt(prompt) end end
+				pcall(function() obj:SetAttribute("Cured", true) obj:SetAttribute("Sickness", "None") obj:SetAttribute("Health", 100) end)
+			end
+		end
+	end
+end })
+viptab:Button({ Title = "Teleport to Emergency Safe Room", Callback = function()
+	local char = localplayer.Character
+	local hrp = char and char:FindFirstChild("HumanoidRootPart")
+	if not hrp then return end
+	local safetarget = nil
+	for _, obj in pairs(Workspace:GetDescendants()) do
+		if obj:IsA("BasePart") then
+			local n = string.lower(obj.Name)
+			if string.find(n, "saferoom") or string.find(n, "security") or string.find(n, "lobby") or string.find(n, "spawn") then
+				safetarget = obj
+				break
+			end
+		end
+	end
+	if safetarget then hrp.CFrame = safetarget.CFrame + Vector3.new(0, 4, 0) else hrp.CFrame = CFrame.new(0, 50, 0) end
+end })
+viptab:Button({ Title = "Destroy All Infected / Monster Mimics", Callback = function()
+	for _, obj in pairs(Workspace:GetDescendants()) do
+		if obj:IsA("Model") and obj ~= localplayer.Character then
+			local n = string.lower(obj.Name)
+			if string.find(n, "anomaly") or string.find(n, "mimic") or string.find(n, "monster") or string.find(n, "infected") or obj:GetAttribute("IsBad") then
+				obj:Destroy()
+			end
+		end
+	end
+end })
+viptab:Button({ Title = "Remove All Locked Hospital Doors & Barriers", Callback = function()
+	for _, obj in pairs(Workspace:GetDescendants()) do
+		if obj:IsA("BasePart") then
+			local n = string.lower(obj.Name)
+			if string.find(n, "door") or string.find(n, "gate") or string.find(n, "lock") or string.find(n, "barrier") or string.find(n, "window") or string.find(n, "glass") then
+				obj:Destroy()
+			end
+		end
+	end
+end })
+
+local teleporttab = window:Tab({ Title = "Teleport", Icon = "location" })
+local function teleportto(targetpart)
+	local char = localplayer.Character
+	local hrp = char and char:FindFirstChild("HumanoidRootPart")
+	if hrp and targetpart and targetpart:IsA("BasePart") then
+		hrp.CFrame = targetpart.CFrame + Vector3.new(0, 3, 0)
+	end
+end
+
+local rooms = Workspace:FindFirstChild("Rooms")
+if rooms then
+	local medical = rooms:FindFirstChild("Medical")
+	if medical then
+		for i = 1, 5 do
+			local room = medical:FindFirstChild("Room" .. i)
+			if room then
+				local minigame = room:FindFirstChild("Minigame")
+				if minigame then
+					local bed = minigame:FindFirstChild("Bed")
+					if bed and bed:IsA("BasePart") then
+						teleporttab:Button({ Title = "Room" .. i .. " - Bed", Callback = function() teleportto(bed) end })
+					end
+				end
+			end
+		end
+	end
+end
+
+local function getbasepart(obj)
+	if obj:IsA("BasePart") then return obj end
+	local part = obj:FindFirstChildOfClass("BasePart")
+	if part then return part end
+	if obj:IsA("Model") then
+		local hrp = obj:FindFirstChild("HumanoidRootPart")
+		if hrp then return hrp end
+		local head = obj:FindFirstChild("Head")
+		if head then return head end
+	end
+	return nil
+end
+
+local function bringitem(index, itemname)
+	local parentcontainer = Workspace:GetChildren()[index]
+	if not parentcontainer then return end
+	local itemsfolder = parentcontainer:FindFirstChild("Items")
+	if not itemsfolder then return end
+	local item = itemsfolder:FindFirstChild(itemname)
+	if not item then return end
+	local pp = item:FindFirstChild("PP")
+	if not pp or not pp:IsA("ProximityPrompt") then return end
+	local teleporttarget = getbasepart(item)
+	if not teleporttarget then return end
+	local char = localplayer.Character
+	local hrp = char and char:FindFirstChild("HumanoidRootPart")
+	if not hrp then return end
+	local orig = hrp.CFrame
+	hrp.CFrame = teleporttarget.CFrame + Vector3.new(0, 3, 0)
+	task.wait(0.1)
+	fireproximityprompt(pp)
+	task.wait(0.2)
+	hrp.CFrame = orig
+end
+
+local bringitems = {
+	{"Medkit", 14},
+	{"IV Drop", 24},
+	{"Thermo", 14},
+	{"Ointment", 37},
+	{"Bandages", 37},
+	{"EyeDrop", 24}
+}
+for _, info in pairs(bringitems) do
+	teleporttab:Button({ Title = "Bring " .. info[1], Callback = function() pcall(function() bringitem(info[2], info[1]) end) end })
+end
+
+teleporttab:Button({ Title = "Throw Item To Trash", Callback = function()
+	local char = localplayer.Character
+	local hrp = char and char:FindFirstChild("HumanoidRootPart")
+	if not hrp then return end
+	local orig = hrp.CFrame
+	local trash = Workspace:FindFirstChild("Trash")
+	if trash then
+		local handle = trash:FindFirstChild("Handle")
+		local pp = trash:FindFirstChild("PP")
+		if handle and handle:IsA("BasePart") then
+			hrp.CFrame = handle.CFrame + Vector3.new(0, 3, 0)
+			task.wait(0.1)
+			if pp and pp:IsA("ProximityPrompt") then fireproximityprompt(pp) task.wait(0.2) end
+			hrp.CFrame = orig
+		end
+	end
+end })
+
+teleporttab:Button({ Title = "Teleport To Office", Callback = function()
+	local char = localplayer.Character
+	local hrp = char and char:FindFirstChild("HumanoidRootPart")
+	if not hrp then return end
+	local officepart = Workspace:GetChildren()[58]
+	if officepart and officepart:IsA("BasePart") then hrp.CFrame = officepart.CFrame + Vector3.new(0, 3, 0) end
+end })
+
+local autotab = window:Tab({ Title = "Auto", Icon = "gear" })
+autotab:Toggle({ Title = "Auto Room 6 (X-Ray)", Callback = function(state) states.autoroomsix = state end })
+autotab:Toggle({ Title = "Auto Heal Patients 1-6", Callback = function(state) states.autoheal = state end })
+autotab:Toggle({ Title = "Auto Process Global", Callback = function(state) states.autoprocess = state end })
+autotab:Toggle({ Title = "Auto Room 7 (Sleep Patient)", Callback = function(state) states.autoroomsixloop = state end })
+autotab:Toggle({ Title = "Auto Room 8 (Sleep Patient)", Callback = function(state) states.autoroomeight = state end })
+autotab:Toggle({ Title = "Instant Actions (HoldDuration 0)", Callback = function(state) states.instantaction = state end })
+
+local settingstab = window:Tab({ Title = "Settings", Icon = "palette" })
+settingstab:Button({ Title = "Apply Theme: Hospital Green", Callback = function() window:SetAccent(Color3.fromRGB(40, 160, 110)) end })
+settingstab:Button({ Title = "Apply Theme: Pro Blue", Callback = function() window:SetAccent(Color3.fromRGB(60, 95, 220)) end })
+settingstab:Button({ Title = "Apply Theme: Crimson Emergency Red", Callback = function() window:SetAccent(Color3.fromRGB(210, 45, 45)) end })
+settingstab:Button({ Title = "Apply Theme: Midnight Purple", Callback = function() window:SetAccent(Color3.fromRGB(140, 50, 220)) end })
+settingstab:Button({ Title = "Apply Theme: Gold VIP", Callback = function() window:SetAccent(Color3.fromRGB(230, 170, 20)) end })
+
+local highlightfolder = Instance.new("Folder")
+highlightfolder.Name = "AnimalHospitalHighlights"
+highlightfolder.Parent = CoreGui
+
+local function createhighlight(target, esptype, fillcolor, outlinecolor)
+	if not target or (not target:IsA("Model") and not target:IsA("BasePart")) then return end
+	local targetid = target:GetDebugId()
+	local existing = highlightfolder:FindFirstChild(targetid)
+	if existing then
+		existing.FillColor = fillcolor
+		existing.OutlineColor = outlinecolor
+		return
+	end
+	local h = Instance.new("Highlight")
+	h.Name = targetid
+	h.Adornee = target
+	h.FillColor = fillcolor
+	h.OutlineColor = outlinecolor
+	h.FillTransparency = 0.35
+	h.OutlineTransparency = 0
+	h:SetAttribute("ESPType", esptype)
+	h.Parent = highlightfolder
+end
+
+local function getcharacter() return localplayer.Character end
+local function gethumanoid()
+	local char = getcharacter()
+	return char and char:FindFirstChild("Humanoid")
+end
+local function getrootpart()
+	local char = getcharacter()
+	return char and char:FindFirstChild("HumanoidRootPart")
+end
+
+local function findbasepartinobject(obj)
+	if not obj then return nil end
+	if obj:IsA("BasePart") then return obj end
+	for _, child in ipairs(obj:GetChildren()) do
+		if child:IsA("BasePart") then return child end
+		if child:IsA("Model") then
+			local part = findbasepartinobject(child)
+			if part then return part end
+		end
+	end
+	return nil
+end
+
+local function lookatposition(targetposition)
+	local root = getrootpart()
+	if root and targetposition then
+		pcall(function()
+			root.CFrame = CFrame.lookAt(root.Position, targetposition)
+			local character = getcharacter()
+			if character then
+				local head = character:FindFirstChild("Head")
+				if head then
+					local campos = head.Position - (root.CFrame.LookVector * 4) + Vector3.new(0, 2, 0)
+					camera.CFrame = CFrame.lookAt(campos, targetposition)
+				end
+			end
+		end)
+	end
+end
+
+local function safeteleport(position)
+	local root = getrootpart()
+	if not root then return end
+	local newpos = position + Vector3.new(0, 2, 0)
+	local success, err = pcall(function() root.CFrame = CFrame.new(newpos) end)
+	if success then
+		RunService.Heartbeat:Wait()
+		root.Velocity = Vector3.new(0, 0, 0)
+		local hum = gethumanoid()
+		if hum then hum:ChangeState(Enum.HumanoidStateType.Running) end
+	end
+end
+
+local function firepromptdirect(prompt)
+	if not prompt or not prompt:IsA("ProximityPrompt") or not prompt.Enabled then return false end
+	local targetpart = findbasepartinobject(prompt.Parent)
+	if targetpart then lookatposition(targetpart.Position) end
+	if states.instantaction then prompt.HoldDuration = 0 end
+	local success = false
+	local s1, e1 = pcall(function() fireproximityprompt(prompt) end)
+	if s1 then success = true end
+	if not success then
+		local s2, e2 = pcall(function()
+			prompt:InputHoldStart(localplayer)
+			task.wait(0.05)
+			prompt:InputHoldEnd(localplayer)
+		end)
+		if s2 then success = true end
+	end
+	if not success then
+		local s3, e3 = pcall(function()
+			local mouse = localplayer:GetMouse()
+			if mouse then
+				local part = findbasepartinobject(prompt.Parent)
+				if part then mouse.Target = part mouse.TargetClick:Fire() end
+			end
+		end)
+		if s3 then success = true end
+	end
+	return success
+end
+
+local function firepromptwithcamera(prompt, targetposition)
+	if not prompt or not prompt:IsA("ProximityPrompt") then return false end
+	if targetposition then lookatposition(targetposition) end
+	return firepromptdirect(prompt)
+end
+
+local function clickbutton(buttonpart)
+	if not buttonpart then return false end
+	local clickdetector = buttonpart:FindFirstChildOfClass("ClickDetector")
+	if clickdetector then
+		lookatposition(buttonpart.Position)
+		local success, err = pcall(function() fireclickdetector(clickdetector) end)
+		if success then return true end
+	end
+	return false
+end
+
+local function getmedicalrooms()
+	local rooms = Workspace:FindFirstChild("Rooms")
+	if rooms then return rooms:FindFirstChild("Medical") end
+	return Workspace:FindFirstChild("Medical")
+end
+
+local function getemergencyrooms()
+	local rooms = Workspace:FindFirstChild("Rooms")
+	if rooms then return rooms:FindFirstChild("Emergency") end
+	return Workspace:FindFirstChild("Emergency")
+end
+
+local function findinbedinroom(room)
+	if not room then return nil end
+	local minigame = room:FindFirstChild("Minigame")
+	if minigame then
+		local bed = minigame:FindFirstChild("Bed")
+		if bed then return bed:FindFirstChild("InBed") end
+	end
+	return room:FindFirstChild("InBed")
+end
+
+local function findinvinroom(room)
+	if not room then return nil end
+	local minigame = room:FindFirstChild("Minigame")
+	if minigame then
+		local tv = minigame:FindFirstChild("TV")
+		if tv then
+			local screen = tv:FindFirstChild("Screen")
+			if screen then
+				local ui = screen:FindFirstChild("UI")
+				if ui then
+					local report = ui:FindFirstChild("Report")
+					if report then return report:FindFirstChild("inv") end
+				end
+			end
+		end
+	end
+	return room:FindFirstChild("inv", true)
+end
+
+local function findcolorsinminigame(room)
+	if not room then return nil end
+	local minigame = room:FindFirstChild("Minigame")
+	if not minigame then return nil end
+	for _, desc in ipairs(minigame:GetDescendants()) do
+		if desc.Name == "Colors" and desc:IsA("Folder") then return desc end
+	end
+	return nil
+end
+
+local function findxraymonitorinminigame(room)
+	if not room then return nil end
+	local minigame = room:FindFirstChild("Minigame")
+	if not minigame then return nil end
+	for _, desc in ipairs(minigame:GetDescendants()) do
+		if desc.Name == "xrayMonitor" and desc:IsA("Model") then return desc end
+	end
+	return nil
+end
+
+local function getbuttonmodels(colorsfolder)
+	if not colorsfolder then return {} end
+	local buttons = {}
+	for _, model in ipairs(colorsfolder:GetChildren()) do
+		if model:IsA("Model") and model:FindFirstChild("Button") then
+			local btn = model:FindFirstChild("Button")
+			if btn and btn:IsA("BasePart") then table.insert(buttons, btn) end
+		end
+	end
+	return buttons
+end
+
+local function getbuttoncolors(colorsfolder)
+	if not colorsfolder then return {} end
+	local colors = {}
+	for _, model in ipairs(colorsfolder:GetChildren()) do
+		if model:IsA("Model") and model:FindFirstChild("Button") then
+			local btn = model:FindFirstChild("Button")
+			if btn and btn:IsA("BasePart") then table.insert(colors, btn.Color) end
+		end
+	end
+	return colors
+end
+
+local function countchangedbuttons(colorsfolder, initialcolors)
+	if not colorsfolder or not initialcolors then return 0 end
+	local currentcolors = getbuttoncolors(colorsfolder)
+	local changed = 0
+	for i = 1, math.min(#initialcolors, #currentcolors) do
+		if initialcolors[i] ~= currentcolors[i] then changed = changed + 1 end
+	end
+	return changed
+end
+
+local function getpromptbyactiontext(actiontext, searchroot)
+	if not actiontext or actiontext == "" then return nil end
+	if not searchroot then searchroot = Workspace end
+	local targettext = string.lower(actiontext)
+	for _, desc in ipairs(searchroot:GetDescendants()) do
+		if desc:IsA("ProximityPrompt") and desc.Enabled and desc.ActionText then
+			local loweraction = string.lower(desc.ActionText)
+			if string.find(loweraction, targettext) or string.find(targettext, loweraction) then return desc end
+		end
+	end
+	return nil
+end
+
+local function hasitem(itemname)
+	if not itemname or itemname == "" then return false end
+	local backpack = localplayer:FindFirstChild("Backpack")
+	if backpack then
+		for _, tool in ipairs(backpack:GetChildren()) do
+			if tool:IsA("Tool") and string.find(string.lower(tool.Name), string.lower(itemname)) then return true end
+		end
+	end
+	local char = getcharacter()
+	if char then
+		for _, tool in ipairs(char:GetChildren()) do
+			if tool:IsA("Tool") and string.find(string.lower(tool.Name), string.lower(itemname)) then return true end
+		end
+	end
+	return false
+end
+
+local function equiptoolfast(itemname)
+	local backpack = localplayer:FindFirstChild("Backpack")
+	local hum = gethumanoid()
+	if backpack and hum then
+		for _, tool in ipairs(backpack:GetChildren()) do
+			if tool:IsA("Tool") and string.find(string.lower(tool.Name), string.lower(itemname)) then
+				hum:EquipTool(tool)
+				task.wait(0.05)
+				return true
+			end
+		end
+	end
+	return false
+end
+
+local itempromptcache = {}
+local cacherefreshtime = 0
+local cache_duration = 3
+
+local function refreshitemcache()
+	itempromptcache = {}
+	cacherefreshtime = os.clock()
+	for _, desc in ipairs(Workspace:GetDescendants()) do
+		if desc:IsA("ProximityPrompt") and desc.Enabled and desc.ActionText then
+			itempromptcache[string.lower(desc.ActionText)] = desc
+		end
+	end
+end
+
+local function getcacheditemprompt(itemname)
+	if not itemname or itemname == "" then return nil end
+	if os.clock() - cacherefreshtime > cache_duration then refreshitemcache() end
+	local target = string.lower(itemname)
+	for key, prompt in pairs(itempromptcache) do
+		if string.find(key, target) or string.find(target, key) then return prompt end
+	end
+	return nil
+end
+
+local function hascheck(item)
+	if not item then return false end
+	local check = item:FindFirstChild("check")
+	if check and check:IsA("ImageLabel") then return check.Visible == true end
+	return false
+end
+
+local function getitemsfrominv(invfolder)
+	local itemsneeded = {}
+	if not invfolder then return itemsneeded end
+	for _, child in ipairs(invfolder:GetChildren()) do
+		if not child:IsA("UIGridLayout") and not child:IsA("UIListLayout") then
+			if child.Name and child.Name ~= "" and not hascheck(child) then
+				table.insert(itemsneeded, child.Name)
+			end
+		end
+	end
+	return itemsneeded
+end
+
+local itemdebounce = {}
+local item_pickup_cooldown = 0.5
+
+local function healroomfast(roomnum)
+	local room = nil
+	local itemsneeded = {}
+	local prompttodeliver = nil
+	local deliverposition = nil
+
+	if roomnum <= 5 then
+		local medical = getmedicalrooms()
+		if medical then room = medical:FindFirstChild("Room" .. roomnum) end
+		if not room then return false end
+		local invpath = findinvinroom(room)
+		if not invpath then return false end
+		itemsneeded = getitemsfrominv(invpath)
+		local bedpath = findinbedinroom(room)
+		if bedpath then
+			for _, desc in ipairs(bedpath:GetDescendants()) do
+				if desc:IsA("ProximityPrompt") and desc.Enabled then prompttodeliver = desc break end
+			end
+			if not prompttodeliver then
+				for _, desc in ipairs(bedpath.Parent:GetDescendants()) do
+					if desc:IsA("ProximityPrompt") and desc.Enabled then prompttodeliver = desc break end
+				end
+			end
+			deliverposition = bedpath.Position
+		end
+	elseif roomnum == 6 then
+		local emergency = getemergencyrooms()
+		if emergency then room = emergency:FindFirstChild("Room6") end
+		if not room then return false end
+		local invpath = findinvinroom(room)
+		if not invpath then return false end
+		itemsneeded = getitemsfrominv(invpath)
+		local npcsfolder = Workspace:FindFirstChild("NPCs")
+		if npcsfolder then
+			for _, npc in ipairs(npcsfolder:GetChildren()) do
+				local pp = npc:FindFirstChild("PP")
+				if pp and pp:IsA("ProximityPrompt") and pp.Enabled and string.find(string.lower(pp.ActionText or ""), "treatment") then
+					prompttodeliver = pp
+					deliverposition = findbasepartinobject(npc) and findbasepartinobject(npc).Position
+					break
+				end
+			end
+		end
+	end
+
+	if #itemsneeded == 0 or not prompttodeliver then return false end
+
+	local holdingallitems = true
+	local maxretries = 3
+
+	for _, itemname in ipairs(itemsneeded) do
+		local retrycount = 0
+		local collected = hasitem(itemname)
+		while not collected and retrycount < maxretries do
+			if hasitem(itemname) then collected = true break end
+			local prompt = getcacheditemprompt(itemname)
+			if prompt and prompt.Enabled then
+				local lastpickup = itemdebounce[prompt] or 0
+				if os.clock() - lastpickup >= item_pickup_cooldown then
+					local part = findbasepartinobject(prompt.Parent)
+					if part then
+						itemdebounce[prompt] = os.clock()
+						safeteleport(part.Position)
+						firepromptdirect(prompt)
+						task.wait(0.2)
+						if hasitem(itemname) then collected = true break end
+					end
+				end
+			end
+			retrycount = retrycount + 1
+			task.wait(0.1)
+		end
+		if not collected then holdingallitems = false end
+	end
+
+	if holdingallitems and deliverposition then
+		safeteleport(deliverposition + Vector3.new(0, 1, 0))
+		for _, itemname in ipairs(itemsneeded) do
+			if hasitem(itemname) then
+				equiptoolfast(itemname)
+				local deliversuccess = false
+				for i = 1, 3 do
+					if firepromptdirect(prompttodeliver) then deliversuccess = true break end
+					task.wait(0.1)
+				end
+				task.wait(0.1)
+			end
+		end
+	end
+
+	return true
+end
+
+local function autoroomsix()
+	local emergency = getemergencyrooms()
+	if not emergency then return end
+	local roomsix = emergency:FindFirstChild("Room6")
+	if not roomsix then return end
+	local minigame = roomsix:FindFirstChild("Minigame")
+	if not minigame then return end
+
+	local xraymonitor = findxraymonitorinminigame(roomsix)
+	if xraymonitor then
+		local xrayprompt = xraymonitor:FindFirstChild("PP")
+		if xrayprompt and xrayprompt:IsA("ProximityPrompt") and xrayprompt.Enabled then
+			local part = findbasepartinobject(xraymonitor)
+			if part then
+				safeteleport(part.Position)
+				firepromptwithcamera(xrayprompt, part.Position)
+				task.wait(0.5)
+			end
+		end
+	end
+
+	local colorsfolder = findcolorsinminigame(roomsix)
+	if not colorsfolder then return end
+
+	local initialcolors = getbuttoncolors(colorsfolder)
+	local buttons = getbuttonmodels(colorsfolder)
+	if #buttons < 4 then return end
+
+	local timeout = 0
+	local changedcount = 0
+	local maxwaittime = 15
+	while timeout < maxwaittime and changedcount < 4 do
+		task.wait(0.2)
+		changedcount = countchangedbuttons(colorsfolder, initialcolors)
+		timeout = timeout + 0.2
+	end
+	task.wait(1.5)
+
+	for _, btn in ipairs(buttons) do
+		if btn and btn:IsA("BasePart") then
+			safeteleport(btn.Position + Vector3.new(0, 1, 2))
+			lookatposition(btn.Position)
+			task.wait(0.2)
+			clickbutton(btn)
+			task.wait(0.15)
+		end
+	end
+
+	local processprompt = nil
+	local processtimeout = 0
+	while processtimeout < 10 do
+		processprompt = getpromptbyactiontext("process results", minigame)
+		if processprompt then break end
+		task.wait(0.3)
+		processtimeout = processtimeout + 0.3
+	end
+	if processprompt then
+		local part = findbasepartinobject(processprompt.Parent)
+		if part then
+			safeteleport(part.Position)
+			firepromptwithcamera(processprompt, part.Position)
+			task.wait(0.5)
+		end
+	end
+
+	local printbadgeprompt = nil
+	local badgetimeout = 0
+	while badgetimeout < 10 do
+		printbadgeprompt = getpromptbyactiontext("print badge", minigame)
+		if printbadgeprompt then break end
+		task.wait(0.3)
+		badgetimeout = badgetimeout + 0.3
+	end
+	if printbadgeprompt then
+		local part = findbasepartinobject(printbadgeprompt.Parent)
+		if part then
+			safeteleport(part.Position)
+			firepromptwithcamera(printbadgeprompt, part.Position)
+			task.wait(0.5)
+		end
+	end
+
+	local collectprompt = nil
+	local collecttimeout = 0
+	while collecttimeout < 8 do
+		collectprompt = getpromptbyactiontext("collect", Workspace)
+		if collectprompt then break end
+		task.wait(0.3)
+		collecttimeout = collecttimeout + 0.3
+	end
+	if collectprompt then
+		local part = findbasepartinobject(collectprompt.Parent)
+		if part then
+			safeteleport(part.Position)
+			firepromptwithcamera(collectprompt, part.Position)
+			task.wait(0.3)
+		end
+	end
+end
+
+local function processglobalrooms()
+	for _, desc in ipairs(Workspace:GetDescendants()) do
+		if not states.autoprocess then break end
+		if desc:IsA("ProximityPrompt") and desc.Enabled and desc.ActionText then
+			local txt = string.lower(desc.ActionText)
+			if string.find(txt, "dna") or string.find(txt, "analyze") or string.find(txt, "process") then
+				local part = findbasepartinobject(desc.Parent)
+				if part then
+					safeteleport(part.Position)
+					firepromptdirect(desc)
+				end
+			end
+		end
+	end
+end
+
+local function autoroomsixloop()
+	local emergency = getemergencyrooms()
+	local roomsix = emergency and emergency:FindFirstChild("Room6")
+	if roomsix then
+		local inbed = findinbedinroom(roomsix)
+		if inbed then
+			for _, prompt in ipairs(inbed:GetDescendants()) do
+				if prompt:IsA("ProximityPrompt") and prompt.Enabled then
+					local text = string.lower(prompt.ActionText or "")
+					local targets = {"sleep", "prepare", "set up", "turn on", "begin", "collect"}
+					for _, target in ipairs(targets) do
+						if string.find(text, target) then
+							local part = findbasepartinobject(prompt.Parent)
+							if part then
+								safeteleport(part.Position)
+								firepromptdirect(prompt)
+							end
+							break
+						end
+					end
+				end
+			end
+		end
+	end
+end
+
+local function autoroomeightloop()
+	local emergency = getemergencyrooms()
+	local roomeight = emergency and emergency:FindFirstChild("Room8")
+	if roomeight then
+		local inbed = findinbedinroom(roomeight)
+		if inbed then
+			for _, prompt in ipairs(inbed:GetDescendants()) do
+				if prompt:IsA("ProximityPrompt") and prompt.Enabled then
+					local text = string.lower(prompt.ActionText or "")
+					if string.find(text, "sleep") or string.find(text, "patient") then
+						local part = findbasepartinobject(prompt.Parent)
+						if part then
+							safeteleport(part.Position)
+							firepromptdirect(prompt)
+						end
+					end
+				end
+			end
+		end
+	end
+end
+
+local function hookprompt(prompt)
+	if not prompt:IsA("ProximityPrompt") then return end
+	if states.instantaction then prompt.HoldDuration = 0 end
+end
+
+Workspace.DescendantAdded:Connect(hookprompt)
+for _, p in ipairs(Workspace:GetDescendants()) do hookprompt(p) end
+
+RunService.RenderStepped:Connect(function()
+	local char = localplayer.Character
+	local hum = char and char:FindFirstChild("Humanoid")
+	local hrp = char and char:FindFirstChild("HumanoidRootPart")
+
+	if hum then
+		if states.speedtoggle then hum.WalkSpeed = states.walkspeed end
+		if states.jumpboost then hum.JumpPower = states.jumppower end
+		if states.godmodeinfection then
+			hum.Health = hum.MaxHealth
+			localplayer:SetAttribute("Infected", false)
+			localplayer:SetAttribute("InfectionLevel", 0)
+		end
+	end
+
+	if Workspace.CurrentCamera then Workspace.CurrentCamera.FieldOfView = states.customfov end
+
+	if states.infstamina then
+		localplayer:SetAttribute("Stamina", 100)
+		localplayer:SetAttribute("MaxStamina", 100)
+		localplayer:SetAttribute("SpeedBoost", 9999)
+	end
+	if states.godsanity then localplayer:SetAttribute("Sanity", 100) end
+	if states.noclip and char then
+		for _, part in pairs(char:GetChildren()) do
+			if part:IsA("BasePart") then part.CanCollide = false end
+		end
+	end
+	if states.fullbright then
+		Lighting.Brightness = 3
+		Lighting.ClockTime = 14
+		Lighting.GlobalShadows = false
+	end
+
+	if states.anomalykillaura and hrp then
+		for _, obj in pairs(Workspace:GetDescendants()) do
+			if obj:IsA("Model") and obj ~= char then
+				local n = string.lower(obj.Name)
+				if string.find(n, "anomaly") or string.find(n, "mimic") or string.find(n, "monster") or string.find(n, "infected") or obj:GetAttribute("IsBad") then
+					local targetpart = obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChild("Head") or obj:FindFirstChildOfClass("BasePart")
+					if targetpart and (targetpart.Position - hrp.Position).Magnitude <= states.killaurarange then
+						local targethum = obj:FindFirstChildOfClass("Humanoid")
+						if targethum then targethum.Health = 0 end
+						pcall(function() obj:Destroy() end)
+					end
+				end
+			end
+		end
+	end
+
+	if states.autoequipdefense and hrp and localplayer:FindFirstChild("Backpack") then
+		local threatnear = false
+		for _, obj in pairs(Workspace:GetDescendants()) do
+			if obj:IsA("Model") and obj ~= char then
+				local n = string.lower(obj.Name)
+				if (string.find(n, "anomaly") or string.find(n, "monster") or string.find(n, "mimic") or obj:GetAttribute("IsBad")) then
+					local tp = obj:FindFirstChildOfClass("BasePart")
+					if tp and (tp.Position - hrp.Position).Magnitude < 30 then
+						threatnear = true
+						break
+					end
+				end
+			end
+		end
+		if threatnear then
+			for _, tool in pairs(localplayer.Backpack:GetChildren()) do
+				if tool:IsA("Tool") and (string.find(string.lower(tool.Name), "gun") or string.find(string.lower(tool.Name), "weapon") or string.find(string.lower(tool.Name), "bat") or string.find(string.lower(tool.Name), "taser")) then
+					tool.Parent = char
+					break
+				end
+			end
+		end
+	end
+end)
+
+task.spawn(function()
+	while task.wait(0.4) do
+		local char = localplayer.Character
+		local hrp = char and char:FindFirstChild("HumanoidRootPart")
+
+		for _, prompt in pairs(Workspace:GetDescendants()) do
+			if prompt:IsA("ProximityPrompt") then
+				if states.fastinteract then prompt.HoldDuration = 0 end
+				if states.autopromptaura and hrp and prompt.Parent and prompt.Parent:IsA("BasePart") then
+					if (prompt.Parent.Position - hrp.Position).Magnitude <= states.promptrange then
+						fireproximityprompt(prompt)
+					end
+				end
+				if states.instantsafecracker and prompt.Parent and string.find(string.lower(prompt.Parent.Name), "safe") then
+					prompt.HoldDuration = 0
+					if hrp and (prompt.Parent.Position - hrp.Position).Magnitude < 20 then
+						fireproximityprompt(prompt)
+					end
+				end
+			end
+		end
+
+		if states.autocleanhazards then
+			for _, obj in pairs(Workspace:GetDescendants()) do
+				if obj:IsA("BasePart") or obj:IsA("Model") then
+					local n = string.lower(obj.Name)
+					if string.find(n, "slime") or string.find(n, "puddle") or string.find(n, "goop") or string.find(n, "parasite") or string.find(n, "hazard") or string.find(n, "eye") or obj:GetAttribute("IsHazard") then
+						pcall(function() obj:Destroy() end)
+					end
+				end
+			end
+		end
+
+		if states.autocollectmeds and hrp then
+			for _, item in pairs(Workspace:GetDescendants()) do
+				if (item:IsA("Tool") or item:IsA("BasePart")) and not item:IsDescendantOf(char) then
+					local n = string.lower(item.Name)
+					if string.find(n, "med") or string.find(n, "bandage") or string.find(n, "herb") or string.find(n, "syrup") or string.find(n, "ointment") or string.find(n, "thermo") or string.find(n, "cure") or string.find(n, "kit") then
+						local part = item:IsA("Tool") and item:FindFirstChild("Handle") or item
+						if part and part:IsA("BasePart") and not part.Anchored and (part.Position - hrp.Position).Magnitude < 120 then
+							part.CFrame = hrp.CFrame
+						end
+					end
+				end
+			end
+		end
+
+		if states.infinitesyringeuse and char then
+			for _, tool in pairs(char:GetChildren()) do
+				if tool:IsA("Tool") then
+					pcall(function()
+						tool:SetAttribute("Uses", 999)
+						tool:SetAttribute("Ammo", 999)
+						tool:SetAttribute("Quantity", 999)
+					end)
+				end
+			end
+		end
+
+		if states.nopatientdegradation then
+			for _, obj in pairs(Workspace:GetDescendants()) do
+				if obj:IsA("Model") and (string.find(string.lower(obj.Name), "patient") or obj:GetAttribute("IsPatient")) then
+					pcall(function()
+						obj:SetAttribute("DegradationRate", 0)
+						if obj:GetAttribute("Health") and obj:GetAttribute("Health") < 50 then
+							obj:SetAttribute("Health", 80)
+						end
+					end)
+				end
+			end
+		end
+
+		if states.smartdiagnosisxray then
+			for _, obj in pairs(Workspace:GetDescendants()) do
+				if obj:IsA("Model") and obj ~= char and (string.find(string.lower(obj.Name), "patient") or obj:GetAttribute("IsPatient")) then
+					local head = obj:FindFirstChild("Head") or obj:FindFirstChildOfClass("BasePart")
+					if head and not head:FindFirstChild("DiagnosisUI") then
+						local bg = Instance.new("BillboardGui")
+						bg.Name = "DiagnosisUI"
+						bg.Adornee = head
+						bg.Size = UDim2.new(0, 130, 0, 45)
+						bg.Stubbornness = 1
+						bg.AlwaysOnTop = true
+						bg.Parent = head
+						local lbl = Instance.new("TextLabel")
+						lbl.Size = UDim2.new(1, 0, 1, 0)
+						lbl.BackgroundTransparency = 0.3
+						lbl.BackgroundColor3 = Color3.fromRGB(15, 20, 18)
+						lbl.TextColor3 = Color3.fromRGB(0, 255, 120)
+						lbl.TextSize = 11
+						lbl.Font = Enum.Font.GothamBold
+						lbl.Text = "Diagnosis: Scanning..."
+						lbl.Parent = bg
+						Instance.new("UICorner", lbl).CornerRadius = UDim.new(0, 4)
+					elseif head and head:FindFirstChild("DiagnosisUI") then
+						local lbl = head.DiagnosisUI:FindFirstChildOfClass("TextLabel")
+						if lbl then
+							local sick = obj:GetAttribute("Sickness") or obj:GetAttribute("Disease") or "Needs Checkup"
+							local hp = obj:GetAttribute("Health") or 100
+							lbl.Text = "Status: " .. tostring(sick) .. "\nHP: " .. tostring(hp) .. "%"
+							if string.find(string.lower(tostring(sick)), "anomaly") or string.find(string.lower(tostring(sick)), "mimic") then
+								lbl.TextColor3 = Color3.fromRGB(255, 50, 50)
+								lbl.Text = "⚠️ FAKE / ANOMALY ⚠️"
+							else
+								lbl.TextColor3 = Color3.fromRGB(0, 255, 120)
+							end
+						end
+					end
+				end
+			end
+		end
+
+		if states.patientesp then
+			for _, obj in pairs(Workspace:GetDescendants()) do
+				if obj:IsA("Model") and obj ~= localplayer.Character then
+					local lowername = string.lower(obj.Name)
+					if string.find(lowername, "patient") or string.find(lowername, "animal") or obj:GetAttribute("IsPatient") then
+						local isanomaly = string.find(lowername, "anomaly") or string.find(lowername, "mimic") or obj:GetAttribute("IsBad")
+						createhighlight(obj, "Patient", isanomaly and Color3.fromRGB(255, 40, 40) or Color3.fromRGB(40, 200, 255), Color3.fromRGB(255, 255, 255))
+					end
+				end
+			end
+		end
+
+		if states.hospitalsanomalyesp then
+			for _, obj in pairs(Workspace:GetDescendants()) do
+				if obj:IsA("Model") or obj:IsA("BasePart") then
+					local lowername = string.lower(obj.Name)
+					if string.find(lowername, "hazard") or string.find(lowername, "slime") or string.find(lowername, "parasite") or obj:GetAttribute("IsHazard") then
+						createhighlight(obj, "HospitalAnomaly", Color3.fromRGB(200, 50, 255), Color3.fromRGB(255, 255, 255))
+					end
+				end
+			end
+		end
+
+		if states.itemsesp then
+			for _, obj in pairs(Workspace:GetDescendants()) do
+				if obj:IsA("Tool") or (obj:IsA("Model") and (string.find(string.lower(obj.Name), "safe") or string.find(string.lower(obj.Name), "med") or string.find(string.lower(obj.Name), "chest"))) then
+					createhighlight(obj, "Item", Color3.fromRGB(255, 200, 40), Color3.fromRGB(255, 255, 255))
+				end
+			end
+		end
+	end
+end)
+
+task.spawn(function()
+	while true do
+		RunService.Heartbeat:Wait()
+		if states.autoroomsix then
+			autoroomsix()
+			task.wait(3)
+		end
+	end
+end)
+
+task.spawn(function()
+	while true do
+		RunService.Heartbeat:Wait()
+		if states.autoheal then
+			for roomnum = 1, 6 do
+				if not states.autoheal then break end
+				healroomfast(roomnum)
+				task.wait(0.1)
+			end
+		end
+	end
+end)
+
+task.spawn(function()
+	while true do
+		RunService.Heartbeat:Wait()
+		if states.autoprocess then
+			processglobalrooms()
+		end
+	end
+end)
+
+task.spawn(function()
+	while true do
+		RunService.Heartbeat:Wait()
+		if states.autoroomsixloop then
+			autoroomsixloop()
+		end
+	end
+end)
+
+task.spawn(function()
+	while true do
+		RunService.Heartbeat:Wait()
+		if states.autoroomeight then
+			autoroomeightloop()
+		end
+	end
+end)
