@@ -1,5 +1,99 @@
-name = "test"
-description = "test"
-creator = "test"
-picture = "" 
-script = "loadstring(game:HttpGet("https://raw.githubusercontent.com/adamowaissi22-boop/Axom/refs/heads/main/AntiCheat%20Bypasser%20by%20axom%20script"))()
+name = "AntiCheat Bypasser"
+description = "A lot of games like rivals, baddies, tower of hell, etc
+And more games gets added (it won't stop getting updated, more days = more games bypassed)"
+creator = "axom"
+picture = ""
+script =
+"loadstring(game:HttpGet("https://raw.githubusercontent.com/axom0022/Axom/refs/heads/main/AntiCheat%20Bypasser%20by%20axom%20script"))()"
+
+name = "AntiCheat Bypasser"
+description = "A lot of games like rivals, baddies, tower of hell, etc
+And more games gets added (it won't stop getting updated, more days = more games bypassed)"
+creator = "axom"
+picture = ""
+script =
+"loadstring(game:HttpGet("https://raw.githubusercontent.com/axom0022/Axom/refs/heads/main/AntiCheat%20Bypasser%20by%20axom%20script"))()"
+
+name = "Axomic Gui2Lua"
+description = "UI logger (turns any GUI into a script)"
+creator = "axom"
+picture = ""
+script = "loadstring(game:HttpGet("https://raw.githubusercontent.com/axom0022/Axom/refs/heads/main/axom%20gui2lua%20script"))()"
+
+name = "Axomic - +1 Age Every Click"
+description = "Get money (7500, etc values), Get Age (5000, etc values), and more."
+creator = "axom"
+picture = ""
+script = "loadstring(game:HttpGet("https://raw.githubusercontent.com/axom0022/Axom/refs/heads/main/axomic%20%2B1%20age%20every%20click%20script"))()"
+
+name = "Axomic - Natural Disasters"
+description = "Features include getting tools (balloon, etc.), no fall damage, no water damage, auto farm/auto win, disaster prediction, teleport to island, teleport to tower, and more."
+creator = "axom"
+picture = ""
+script = "loadstring(game:HttpGet("https://raw.githubusercontent.com/axom0022/Axom/refs/heads/main/axomic%20natural%20disasters%20script"))()"
+
+name = "Axomic Sword"
+description = "Works for all games that has the classic sword or a sword that uses TouchInterest directly. Features include targeting up to 5 players by username, auto kill, loop kill all, kill aura, and more."
+creator = "axom"
+picture = ""
+script = "loadstring(game:HttpGet("https://raw.githubusercontent.com/axom0022/Axom/refs/heads/main/axomic%20sword%20script"))()"
+
+name = "Axomic F3X"
+description = "Features include server message, hint, alert, title, explode all, fog, disco, music, character controls, and more."
+creator = "axom"
+picture = ""
+script = "loadstring(game:HttpGet("https://raw.githubusercontent.com/axom0022/Axom/refs/heads/main/axomic%20f3x%20script"))()"
+
+name = "Axomic Brookhaven"
+description = "Features include WalkSpeed, Jump Power, Invisible, Orange Fire, Black Fire, FE Skybox, Big Head, Giant, unban from houses, auto unban, walk through doors, NoClip, ESP, X-Ray, Couch Tool, Fling, ESP Tool, Teleport by Click Tool, X-Ray Tool, Skybox, and more."
+creator = "axom"
+picture = ""
+script = "loadstring(game:HttpGet("https://raw.githubusercontent.com/axom0022/Axom/refs/heads/main/Axomic%20Brookhaven%20script"))()"
+
+name = "Axomic Squid Game X"
+description = "Features include WalkSpeed, NoClip, auto Red Light Green Light, instant Jump Rope completion, rope removal, Tug War, and more."
+creator = "axom"
+picture = ""
+script = "loadstring(game:HttpGet("https://raw.githubusercontent.com/axom0022/Axom/refs/heads/main/Axom%20Squid%20Game%20X%20Script"))()"
+
+name = "Axomic Sonic script"
+description = "Features Sonic idle and running animations, a warm-up animation, and a client-sided coins system."
+creator = "axom"
+picture = ""
+script = "loadstring(game:HttpGet("https://raw.githubusercontent.com/axom0022/Axom/refs/heads/main/Fe%20Sonic%20Script%20Axom"))()"
+
+name = "Axomic Chatlands"
+description = "Features include WalkSpeed, FOV, ObbyMaster tag, Pathfinder tag, sword kill aura, sword kill all, get sword, and more."
+creator = "axom"
+picture = ""
+script = "loadstring(game:HttpGet("https://raw.githubusercontent.com/axom0022/Axom/refs/heads/main/axomic%20chatlands%20script"))()"
+
+name = "Axomic Touch Fling"
+description = "Touch fling script for games with CanCollide enabled. Works in games like Natural Disaster Survival, Brookhaven, and more. Will be improved soon."
+creator = "axom"
+picture = ""
+script = "loadstring(game:HttpGet("https://raw.githubusercontent.com/axom0022/Axom/refs/heads/main/axomic%20touch%20fling%20script"))()"
+
+name = "Axomic Escape Tsunami for Brainrots"
+description = "Keyless script with features such as God Mode, WalkSpeed, and more."
+creator = "axom"
+picture = ""
+script = "loadstring(game:HttpGet("https://raw.githubusercontent.com/axom0022/Axom/refs/heads/main/Etfb"))()"
+
+name = "Axomic ServerSided Skybox"
+description = "Works in games that support it, such as Popmall and Brookhaven. May not work in all games."
+creator = "axom"
+picture = ""
+script = "loadstring(game:HttpGet("https://raw.githubusercontent.com/axom0022/Axom/refs/heads/main/serversided%20skybox%20script"))()"
+
+name = "Axomic Fake VR"
+description = "Client-sided fake VR script."
+creator = "axom"
+picture = ""
+script = "loadstring(game:HttpGet("https://raw.githubusercontent.com/axom0022/Axom/refs/heads/main/fake%20vr%20script"))()"
+
+name = "Axomic Abo Fanous"
+description = "Features like jumpscare, fling (under development), and more. The jumpscare is tested and works in the lobby; more features will be added."
+creator = "axom"
+picture = ""
+script = "loadstring(game:HttpGet("https://raw.githubusercontent.com/axom0022/Axom/refs/heads/main/abo%20fanous%20script"))()"
