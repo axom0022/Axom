@@ -1,0 +1,21 @@
+name = "Delta Executer"
+devices = "Android, IOS"
+download = "https://deltaexploits.gg/"
+price = "free"
+undetected = "true"
+
+~
+
+name = "Vegax Executer"
+devices = "Android"
+download = "https://www.vegax.gg/"
+price = "free"
+undetected = "?"
+
+~
+
+name = "Velocity Executer"
+devices = "Windows"
+download = "https://velocity-executor.com/download/"
+price = "free"
+undetected = "?"
