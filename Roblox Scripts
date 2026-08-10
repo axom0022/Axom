@@ -1,0 +1,149 @@
+name = "AntiCheat Bypasser"
+description = "A lot of games like rivals, baddies, tower of hell, etc
+And more games gets added (it won't stop getting updated, more days = more games bypassed)"
+creator = "axom"
+picture = ""
+tags = "anticheat, bypasser"
+script = loadstring(game:HttpGet("https://raw.githubusercontent.com/axom0022/Axom/refs/heads/main/AntiCheat%20Bypasser%20by%20axom%20script"))()
+
+~
+
+name = "Axomic Gui2Lua"
+description = "UI logger (turns any GUI into a script)"
+creator = "axom"
+picture = ""
+tags = "utility, gui"
+script = loadstring(game:HttpGet("https://raw.githubusercontent.com/axom0022/Axom/refs/heads/main/axom%20gui2lua%20script"))()
+
+~
+
+name = "Axomic - +1 Age Every Click"
+description = "Get money (7500, etc values), Get Age (5000, etc values), and more."
+creator = "axom"
+games = "https://www.roblox.com/games/130526979296684/1-Age-Every-Click"
+picture = "https://tr.rbxcdn.com/180DAY-47585824cb91a309d3f970bd1ca1c728/768/432/Image/Webp/noFilter"
+tags = "age, clicker"
+script = loadstring(game:HttpGet("https://raw.githubusercontent.com/axom0022/Axom/refs/heads/main/axomic%20%2B1%20age%20every%20click%20script"))()
+
+~
+
+name = "Axomic Natural Disasters"
+description = "Features include getting tools (balloon, etc.), no fall damage, no water damage, auto farm/auto win, disaster prediction, teleport to island, teleport to tower, and more."
+creator = "axom"
+games = "https://www.roblox.com/games/189707/Natural-Disaster-Survival"
+picture = "https://tr.rbxcdn.com/180DAY-7ea7065a02f8cff80f8b0270a9ad2d3b/768/432/Image/Webp/noFilter"
+tags = "nds, farm, utility"
+script = loadstring(game:HttpGet("https://raw.githubusercontent.com/axom0022/Axom/refs/heads/main/axomic%20natural%20disasters%20script"))()
+
+~
+
+name = "Axomic Sword"
+description = "Works for all games that has the classic sword or a sword that uses TouchInterest directly. Features include targeting up to 5 players by username, auto kill, loop kill all, kill aura, and more."
+creator = "axom"
+picture = ""
+tags = "sword, combat, pvp"
+script = loadstring(game:HttpGet("https://raw.githubusercontent.com/axom0022/Axom/refs/heads/main/axomic%20sword%20script"))()
+
+~
+
+name = "Axomic F3X"
+description = "Features include server message, hint, alert, title, explode all, fog, disco, music, character controls, and more."
+creator = "axom"
+picture = ""
+tags = "f3x, admin, utility"
+script = loadstring(game:HttpGet("https://raw.githubusercontent.com/axom0022/Axom/refs/heads/main/axomic%20f3x%20script"))()
+
+~
+
+name = "Axomic Brookhaven"
+description = "Features include WalkSpeed, Jump Power, Invisible, Orange Fire, Black Fire, FE Skybox, Big Head, Giant, unban from houses, auto unban, walk through doors, NoClip, ESP, X-Ray, Couch Tool, Fling, ESP Tool, Teleport by Click Tool, X-Ray Tool, Skybox, and more."
+creator = "axom"
+games = "https://www.roblox.com/games/4924922222/Brookhaven-RP"
+picture = "https://tr.rbxcdn.com/180DAY-b7b8288709b9ca5fb5374ea78ef6d9e8/768/432/Image/Webp/noFilter"
+tags = "brookhaven, rp, esp"
+script = loadstring(game:HttpGet("https://raw.githubusercontent.com/axom0022/Axom/refs/heads/main/Axomic%20Brookhaven%20script"))()
+
+~
+
+name = "Axomic Squid Game X"
+description = "Features include WalkSpeed, NoClip, auto Red Light Green Light, instant Jump Rope completion, rope removal, Tug War, and more."
+creator = "axom"
+games = "https://www.roblox.com/games/7554888362/Squid-Game-X"
+picture = "https://tr.rbxcdn.com/180DAY-2264689de7f046b3c3df5e135abd5ffa/768/432/Image/Webp/noFilter"
+tags = "squid game, minigames"
+script = loadstring(game:HttpGet("https://raw.githubusercontent.com/axom0022/Axom/refs/heads/main/Axom%20Squid%20Game%20X%20Script"))()
+
+~
+
+name = "Axomic Sonic script"
+description = "Features Sonic idle and running animations, a warm-up animation, and a client-sided coins system."
+creator = "axom"
+picture = ""
+tags = "sonic, animation, fun"
+script = loadstring(game:HttpGet("https://raw.githubusercontent.com/axom0022/Axom/refs/heads/main/Fe%20Sonic%20Script%20Axom"))()
+
+~
+
+name = "Axomic Chatlands"
+description = "Features include WalkSpeed, FOV, ObbyMaster tag, Pathfinder tag, sword kill aura, sword kill all, get sword, and more."
+creator = "axom"
+picture = ""
+tags = "chatlands, combat, tags"
+script = loadstring(game:HttpGet("https://raw.githubusercontent.com/axom0022/Axom/refs/heads/main/axomic%20chatlands%20script"))()
+
+~
+
+name = "Axomic Touch Fling"
+description = "Touch fling script for games with CanCollide enabled. Works in games like Natural Disaster Survival, Brookhaven, and more. Will be improved soon."
+creator = "axom"
+picture = ""
+tags = "fling, touch, physics"
+script = loadstring(game:HttpGet("https://raw.githubusercontent.com/axom0022/Axom/refs/heads/main/axomic%20touch%20fling%20script"))()
+
+~
+
+name = "Axomic Escape Tsunami for Brainrots"
+description = "Keyless script with features such as God Mode, WalkSpeed, and more."
+creator = "axom"
+games = "https://www.roblox.com/games/131623223084840/Escape-Tsunami-For-Brainrots"
+picture = "https://tr.rbxcdn.com/180DAY-fda0ef6bb21ffd4aee108f600d82f924/768/432/Image/Webp/noFilter"
+tags = "etfb, brainrot, godmode"
+script = loadstring(game:HttpGet("https://raw.githubusercontent.com/axom0022/Axom/refs/heads/main/Etfb"))()
+
+~
+
+name = "Axomic ServerSided Skybox"
+description = "Works in games that support it, such as Popmall and Brookhaven. May not work in all games."
+creator = "axom"
+picture = ""
+tags = "skybox, visual, serversided"
+script = loadstring(game:HttpGet("https://raw.githubusercontent.com/axom0022/Axom/refs/heads/main/serversided%20skybox%20script"))()
+
+~
+
+name = "Axomic Fake VR"
+description = "Client-sided fake VR script."
+creator = "axom"
+picture = ""
+tags = "vr, visual, fun"
+script = loadstring(game:HttpGet("https://raw.githubusercontent.com/axom0022/Axom/refs/heads/main/fake%20vr%20script"))()
+
+~
+
+name = "Axomic Abo Fanous"
+description = "Features like jumpscare, fling (under development), and more. The jumpscare is tested and works in the lobby; more features will be added."
+creator = "axom"
+games = "https://www.roblox.com/games/129954712894461/Lost-in-the-Desert-Abu-Fanous"
+picture = ""
+tags = "jumpscares, abofanous, horror"
+script = loadstring(game:HttpGet("https://raw.githubusercontent.com/axom0022/Axom/refs/heads/main/abo%20fanous%20script"))()
+
+~
+
+name = "Zombie vs human auto build pillars"
+description = "Auto build pillars idk and you can adjusted it to 12"
+creator "kajanan"
+picture = "https://www.google.com/search?client=ms-android-xiaomi-terr1-rso2&hs=hJ4&sca_esv=b369f24a4bfe80d4&sxsrf=APpeQntuEuAluDbuMtwzrHjdhFOrJp5tIw:1786110771351&udm=2&fbs=ABfTbFUxGEP8yeZbmk97ajdTjIq-Fell6yjIojusYtuKjXhLi43HlmHdBhkjA3l1LeWMNI0LOnU0cPW7uXXBordtxQ_wYWFn-H8p7PJe-D8ckxcwK-_wp84N1I_26i5ufHRsjDsdi1fz17oKMXHe91sSGeY7F664cAUC3_ZlP8nkcUPRTl3G4jpc-rTp7f3xIXJ641UXMZ5RdXAbmaY-CTzv9Q7U_WFomL0EtcJKjbGu1IqJcZR6ds0&q=fih&sa=X&ved=2ahUKEwj97biQ1Y6WAxWeavUHHRHTAq4QtKgLegQIExAB&biw=320&bih=575&dpr=2.25"
+games = "15781012611"
+haskey = false
+script = -- Auto-Pillar Builder UI (Compact & Click-to-Build) local Players = game:GetService("Players") local ReplicatedStorage = game:GetService("ReplicatedStorage") local UserInputService = game:GetService("UserInputService") local CoreGui = game:GetService("CoreGui") local LocalPlayer = Players.LocalPlayer local BuildEvent = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("BuildInteract") -- Strict block list based on your provided functions local BlockTypes = { "Obsidian", "DiamondBlock", "IronBlock", "Cobblestone", "OakLog" } -- Settings local currentBlockIndex = 1 local currentHeight = 5 local maxHeight = 12 local buildSpeed = 0.10 local isBuilding = false -- Clean up existing UI if it exists local guiName = "MobilePillarUI" local parentGui = pcall(function() return CoreGui.Name end) and CoreGui or LocalPlayer:WaitForChild("PlayerGui") if parentGui:FindFirstChild(guiName) then parentGui[guiName]:Destroy() end -- UI Creation (Made much smaller) local ScreenGui = Instance.new("ScreenGui") ScreenGui.Name = guiName ScreenGui.ResetOnSpawn = false ScreenGui.Parent = parentGui local MainFrame = Instance.new("Frame") MainFrame.Size = UDim2.new(0, 220, 0, 185) -- Compact size MainFrame.Position = UDim2.new(0.5, -110, 0.5, -92) MainFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 40) MainFrame.Parent = ScreenGui local UICorner = Instance.new("UICorner") UICorner.CornerRadius = UDim.new(0, 10) UICorner.Parent = MainFrame local Title = Instance.new("TextLabel") Title.Size = UDim2.new(1, 0, 0, 30) Title.BackgroundTransparency = 1 Title.Text = "Pillar Builder" Title.TextColor3 = Color3.fromRGB(255, 255, 255) Title.TextSize = 18 Title.Font = Enum.Font.FredokaOne Title.Parent = MainFrame -- Block Selector Button local BlockButton = Instance.new("TextButton") BlockButton.Size = UDim2.new(0.9, 0, 0, 35) BlockButton.Position = UDim2.new(0.05, 0, 0, 35) BlockButton.BackgroundColor3 = Color3.fromRGB(55, 55, 65) BlockButton.Text = "Block: " .. BlockTypes[currentBlockIndex] BlockButton.TextColor3 = Color3.fromRGB(255, 255, 255) BlockButton.TextSize = 14 BlockButton.Font = Enum.Font.GothamBold BlockButton.Parent = MainFrame Instance.new("UICorner", BlockButton).CornerRadius = UDim.new(0, 6) -- Height Controls local HeightLabel = Instance.new("TextLabel") HeightLabel.Size = UDim2.new(0.5, 0, 0, 35) HeightLabel.Position = UDim2.new(0.25, 0, 0, 80) HeightLabel.BackgroundTransparency = 1 HeightLabel.Text = "Height: " .. currentHeight HeightLabel.TextColor3 = Color3.fromRGB(255, 255, 255) HeightLabel.TextSize = 16 HeightLabel.Font = Enum.Font.GothamBold HeightLabel.Parent = MainFrame local MinusBtn = Instance.new("TextButton") MinusBtn.Size = UDim2.new(0, 35, 0, 35) MinusBtn.Position = UDim2.new(0.05, 0, 0, 80) MinusBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50) MinusBtn.Text = "-" MinusBtn.TextColor3 = Color3.fromRGB(255, 255, 255) MinusBtn.TextSize = 24 MinusBtn.Font = Enum.Font.GothamBlack MinusBtn.Parent = MainFrame Instance.new("UICorner", MinusBtn).CornerRadius = UDim.new(0, 6) local PlusBtn = Instance.new("TextButton") PlusBtn.Size = UDim2.new(0, 35, 0, 35) PlusBtn.Position = UDim2.new(0.95, -35, 0, 80) PlusBtn.BackgroundColor3 = Color3.fromRGB(50, 200, 50) PlusBtn.Text = "+" PlusBtn.TextColor3 = Color3.fromRGB(255, 255, 255) PlusBtn.TextSize = 24 PlusBtn.Font = Enum.Font.GothamBlack PlusBtn.Parent = MainFrame Instance.new("UICorner", PlusBtn).CornerRadius = UDim.new(0, 6) -- Build Button local BuildBtn = Instance.new("TextButton") BuildBtn.Size = UDim2.new(0.9, 0, 0, 45) BuildBtn.Position = UDim2.new(0.05, 0, 0, 125) BuildBtn.BackgroundColor3 = Color3.fromRGB(80, 150, 255) BuildBtn.Text = "BUILD" BuildBtn.TextColor3 = Color3.fromRGB(255, 255, 255) BuildBtn.TextSize = 18 BuildBtn.Font = Enum.Font.GothamBlack BuildBtn.Parent = MainFrame Instance.new("UICorner", BuildBtn).CornerRadius = UDim.new(0, 6) -- Mobile Dragging Logic local dragging, dragInput, dragStart, startPos Title.InputBegan:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then dragging = true dragStart = input.Position startPos = MainFrame.Position input.Changed:Connect(function() if input.UserInputState == Enum.UserInputState.End then dragging = false end end) end end) Title.InputChanged:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then dragInput = input end end) UserInputService.InputChanged:Connect(function(input) if input == dragInput and dragging then local delta = input.Position - dragStart MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y) end end) -- Button Interactions BlockButton.MouseButton1Click:Connect(function() currentBlockIndex = currentBlockIndex + 1 if currentBlockIndex > #BlockTypes then currentBlockIndex = 1 end BlockButton.Text = "Block: " .. BlockTypes[currentBlockIndex] end) MinusBtn.MouseButton1Click:Connect(function() if currentHeight > 1 then currentHeight = currentHeight - 1 HeightLabel.Text = "Height: " .. currentHeight end end) PlusBtn.MouseButton1Click:Connect(function() if currentHeight < maxHeight then currentHeight = currentHeight + 1 HeightLabel.Text = "Height: " .. currentHeight end end) -- Click to Build Logic BuildBtn.MouseButton1Click:Connect(function() if isBuilding then return end local char = LocalPlayer.Character if not char or not char:FindFirstChild("HumanoidRootPart") then return end isBuilding = true BuildBtn.Text = "BUILDING..." BuildBtn.BackgroundColor3 = Color3.fromRGB(150, 150, 150) local hrp = char.HumanoidRootPart -- Start 6 studs forward and drop down to feet level local forwardPos = hrp.Position + (hrp.CFrame.LookVector * 6) local gridSnap = 4 local snapX = math.floor((forwardPos.X / gridSnap) + 0.5) * gridSnap local snapZ = math.floor((forwardPos.Z / gridSnap) + 0.5) * gridSnap local feetY = hrp.Position.Y - 3 local snapY = math.floor((feetY / gridSnap) + 0.5) * gridSnap local selectedBlock = BlockTypes[currentBlockIndex] -- Build loop at 0.10 speed for i = 0, currentHeight - 1 do local placePos = Vector3.new(snapX, snapY + (i * gridSnap), snapZ) pcall(function() BuildEvent:InvokeServer("Place", selectedBlock, placePos, 0) end) task.wait(buildSpeed) end -- Reset button after building isBuilding = false BuildBtn.Text = "BUILD" BuildBtn.BackgroundColor3 = Color3.fromRGB(80, 150, 255) end)
