@@ -141,8 +141,8 @@ function Gui:SerializeObject(object, parentVar)
     
     for _, child in ipairs(object:GetChildren()) do
         if child:IsA("BaseScript") then
-            local scriptCode = pcall(function() return child.Source end)
-            if scriptCode then
+            local success, scriptCode = pcall(function() return child.Source end)
+            if success and scriptCode then
                 output = output .. string.format("-- Embedded Script: %s\n", child:GetFullName())
                 output = output .. scriptCode .. "\n"
             end
@@ -540,7 +540,11 @@ function UI()
         end
 
         if obj:IsA("BaseScript") then
-            local source = obj.Source
+            local success, source = pcall(function() return obj.Source end)
+            if not success or not source then
+                ShowNotification("Error: Cannot read script source")
+                return
+            end
             local filename = string.format("axomGui2Lua/%s.lua", obj.Name)
             ShowOutput(source, filename)
             writefile(filename, source)
@@ -554,18 +558,20 @@ function UI()
             local scriptsExtracted = 0
             for _, child in ipairs(obj:GetDescendants()) do
                 if child:IsA("BaseScript") then
-                    local source = child.Source
-                    local path = getFullPath(child)
-                    addCapturedItem({
-                        type = "script",
-                        obj = child,
-                        name = child.Name,
-                        code = source,
-                        path = path,
-                        className = child.ClassName,
-                        timestamp = os.time()
-                    })
-                    scriptsExtracted = scriptsExtracted + 1
+                    local success, source = pcall(function() return child.Source end)
+                    if success and source then
+                        local path = getFullPath(child)
+                        addCapturedItem({
+                            type = "script",
+                            obj = child,
+                            name = child.Name,
+                            code = source,
+                            path = path,
+                            className = child.ClassName,
+                            timestamp = os.time()
+                        })
+                        scriptsExtracted = scriptsExtracted + 1
+                    end
                 end
             end
             if scriptsExtracted > 0 then
@@ -613,18 +619,20 @@ function UI()
                 local extracted = 0
                 for _, child in ipairs(gui:GetDescendants()) do
                     if child:IsA("BaseScript") then
-                        local source = child.Source
-                        local path = getFullPath(child)
-                        addCapturedItem({
-                            type = "script",
-                            obj = child,
-                            name = child.Name,
-                            code = source,
-                            path = path,
-                            className = child.ClassName,
-                            timestamp = os.time()
-                        })
-                        extracted = extracted + 1
+                        local success, source = pcall(function() return child.Source end)
+                        if success and source then
+                            local path = getFullPath(child)
+                            addCapturedItem({
+                                type = "script",
+                                obj = child,
+                                name = child.Name,
+                                code = source,
+                                path = path,
+                                className = child.ClassName,
+                                timestamp = os.time()
+                            })
+                            extracted = extracted + 1
+                        end
                     end
                 end
                 if extracted > 0 then
@@ -823,7 +831,7 @@ function UI()
                 end
             end
         end
-        StatsLabel.Text = "GUIs: " .. guiCount .. " | Scripts: " .. scriptCount .. " (Nested: " .. nestedCount .. ")"
+        StatsLabel.Text = "GUIs: " != nil and ("GUIs: " .. guiCount .. " | Scripts: " .. scriptCount .. " (Nested: " .. nestedCount .. ")") or ""
     end
 
     local function deepScanGui(gui)
@@ -846,38 +854,44 @@ function UI()
                 if child:IsA("ScreenGui") and child.Name ~= "axomGui2Lua" then
                     deepScanGui(child)
                 elseif child:IsA("BaseScript") then
-                    local filename = string.format("axomGui2Lua/%s.lua", child.Name)
-                    if not isfolder("axomGui2Lua") then
-                        makefolder("axomGui2Lua")
+                    local success, source = pcall(function() return child.Source end)
+                    if success and source then
+                        local filename = string.format("axomGui2Lua/%s.lua", child.Name)
+                        if not isfolder("axomGui2Lua") then
+                            makefolder("axomGui2Lua")
+                        end
+                        writefile(filename, source)
+                        addCapturedItem({
+                            type = "script",
+                            obj = child,
+                            name = child.Name,
+                            code = source,
+                            path = getFullPath(child),
+                            className = child.ClassName,
+                            timestamp = os.time()
+                        })
                     end
-                    writefile(filename, child.Source)
-                    addCapturedItem({
-                        type = "script",
-                        obj = child,
-                        name = child.Name,
-                        code = child.Source,
-                        path = getFullPath(child),
-                        className = child.ClassName,
-                        timestamp = os.time()
-                    })
                 end
                 if child:IsA("ScreenGui") or child:IsA("PlayerGui") or child:IsA("CoreGui") then
                     for _, desc in ipairs(child:GetDescendants()) do
                         if desc:IsA("BaseScript") then
-                            local filename = string.format("axomGui2Lua/%s.lua", desc.Name)
-                            if not isfolder("axomGui2Lua") then
-                                makefolder("axomGui2Lua")
+                            local success, source = pcall(function() return desc.Source end)
+                            if success and source then
+                                local filename = string.format("axomGui2Lua/%s.lua", desc.Name)
+                                if not isfolder("axomGui2Lua") then
+                                    makefolder("axomGui2Lua")
+                                end
+                                writefile(filename, source)
+                                addCapturedItem({
+                                    type = "script",
+                                    obj = desc,
+                                    name = desc.Name,
+                                    code = source,
+                                    path = getFullPath(desc),
+                                    className = desc.ClassName,
+                                    timestamp = os.time()
+                                })
                             end
-                            writefile(filename, desc.Source)
-                            addCapturedItem({
-                                type = "script",
-                                obj = desc,
-                                name = desc.Name,
-                                code = desc.Source,
-                                path = getFullPath(desc),
-                                className = desc.ClassName,
-                                timestamp = os.time()
-                            })
                         end
                     end
                 end
@@ -905,20 +919,23 @@ function UI()
                 if child:IsA("ScreenGui") and child.Name ~= "axomGui2Lua" then
                     deepScanGui(child)
                 elseif child:IsA("BaseScript") then
-                    local filename = string.format("axomGui2Lua/%s.lua", child.Name)
-                    if not isfolder("axomGui2Lua") then
-                        makefolder("axomGui2Lua")
+                    local success, source = pcall(function() return child.Source end)
+                    if success and source then
+                        local filename = string.format("axomGui2Lua/%s.lua", child.Name)
+                        if not isfolder("axomGui2Lua") then
+                            makefolder("axomGui2Lua")
+                        end
+                        writefile(filename, source)
+                        addCapturedItem({
+                            type = "script",
+                            obj = child,
+                            name = child.Name,
+                            code = source,
+                            path = getFullPath(child),
+                            className = child.ClassName,
+                            timestamp = os.time()
+                        })
                     end
-                    writefile(filename, child.Source)
-                    addCapturedItem({
-                        type = "script",
-                        obj = child,
-                        name = child.Name,
-                        code = child.Source,
-                        path = getFullPath(child),
-                        className = child.ClassName,
-                        timestamp = os.time()
-                    })
                 end
             end)
             table.insert(captureConnections, conn)
@@ -926,20 +943,23 @@ function UI()
                 if existing:IsA("ScreenGui") and existing.Name ~= "axomGui2Lua" then
                     local guiConn = existing.DescendantAdded:Connect(function(desc)
                         if desc:IsA("BaseScript") then
-                            local filename = string.format("axomGui2Lua/%s.lua", desc.Name)
-                            if not isfolder("axomGui2Lua") then
-                                makefolder("axomGui2Lua")
+                            local success, source = pcall(function() return desc.Source end)
+                            if success and source then
+                                local filename = string.format("axomGui2Lua/%s.lua", desc.Name)
+                                if not isfolder("axomGui2Lua") then
+                                    makefolder("axomGui2Lua")
+                                end
+                                writefile(filename, source)
+                                addCapturedItem({
+                                    type = "script",
+                                    obj = desc,
+                                    name = desc.Name,
+                                    code = source,
+                                    path = getFullPath(desc),
+                                    className = desc.ClassName,
+                                    timestamp = os.time()
+                                })
                             end
-                            writefile(filename, desc.Source)
-                            addCapturedItem({
-                                type = "script",
-                                obj = desc,
-                                name = desc.Name,
-                                code = desc.Source,
-                                path = getFullPath(desc),
-                                className = desc.ClassName,
-                                timestamp = os.time()
-                            })
                         end
                     end)
                     table.insert(captureConnections, guiConn)
