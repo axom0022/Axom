@@ -1,851 +1,1010 @@
-local coregui = game:GetService("CoreGui")
-local runservice = game:GetService("RunService")
-local uis = game:GetService("UserInputService")
-local players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local HttpService = game:GetService("HttpService")
 
-local player = players.LocalPlayer
-local playergui = player:WaitForChild("PlayerGui")
-
-local themes = {
-    Dark = {
-        Main = Color3.fromRGB(18, 18, 18),
-        Topbar = Color3.fromRGB(24, 24, 24),
-        Sidebar = Color3.fromRGB(14, 14, 14),
-        Card = Color3.fromRGB(20, 20, 20),
-        Text = Color3.fromRGB(230, 230, 230),
-        Accent = Color3.fromRGB(255, 200, 50),
-        Stroke = Color3.fromRGB(45, 45, 45)
+local Gui = {
+    Properties = {
+        "ImageRectOffset", "SliceCenter", "SliceScale", "TileSize",
+        "ImageTransparency", "ImageRectSize", 
+        "Image", "ImageColor3", "ScaleType", 
+        "BorderColor3", "BorderTransparency", 
+        "BorderMode", "BorderSizePixel",
+        "Name", "Active", "Visible", "ClipsDescendants", 
+        "Rotation", "ZIndex", "LayoutOrder",
+        "Size", "Position", "AutomaticSize", "AnchorPoint",
+        "BackgroundTransparency", "Transparency", 
+        "BackgroundColor3", 
+        "SizeConstraint", "Interactable",
+        "SelectionOrder", "SelectionImageObject",
+        "GroupTransparency", "GroupColor3", 
+        "Text", "TextColor3", "TextSize", "TextXAlignment", 
+        "TextYAlignment", "FontFace", "TextWrapped", "RichText",
+        "AutoButtonColor", "LineHeight", "TextTruncate", "TextFit",
+        "TextTransparency", "PlaceholderText", "PlaceholderColor3",
+        "TextDirection", "ClearTextOnFocus",
+        "PaddingTop", "PaddingLeft", "PaddingRight", "PaddingBottom",
+        "CanvasPosition", "CanvasSize", "ElasticBehavior", 
+        "HorizontalScrollBarInset", "VerticalScrollBarInset",
+        "VerticalScrollBarPosition",
+        "BottomImage", "TopImage", "MidImage",
+        "ScrollBarImageColor3", "ScrollBarImageTransparency",
+        "ScrollBarThickness", "ScrollingDirection", "ScrollingEnabled",
+        "CornerRadius", 
+        "Scale", 
+        "Thickness", "ApplyStrokeMode", "Color",
+        "SortOrder", "VerticalAlignment", "HorizontalAlignment", 
+        "FillDirection", "Padding",
+        "ZIndexBehavior", "IgnoreGuiInset",
+        "Parent",
+        "StrokeColor", "StrokeTransparency", "StrokeThickness",
+        "GradientColor", "GradientTransparency", "GradientRotation",
+        "AspectRatio", "DominantAxis",
+        "MaxSize", "MinSize",
+        "MaxTextSize", "MinTextSize",
+        "AutoLocalize", "RootLocalizationTable",
     },
-    Light = {
-        Main = Color3.fromRGB(240, 240, 240),
-        Topbar = Color3.fromRGB(220, 220, 220),
-        Sidebar = Color3.fromRGB(230, 230, 230),
-        Card = Color3.fromRGB(250, 250, 250),
-        Text = Color3.fromRGB(30, 30, 30),
-        Accent = Color3.fromRGB(0, 120, 215),
-        Stroke = Color3.fromRGB(200, 200, 200)
+    
+    Serializers = {
+        ColorSequence = function(colorSequence)
+            local keypoints = colorSequence.Keypoints
+            local serializedKeypoints = {}
+            for _, keypoint in ipairs(keypoints) do
+                table.insert(serializedKeypoints, string.format("ColorSequenceKeypoint.new(%s, Color3.fromRGB(%d, %d, %d))",
+                    keypoint.Time,
+                    math.floor(keypoint.Value.R * 255),
+                    math.floor(keypoint.Value.G * 255),
+                    math.floor(keypoint.Value.B * 255)
+                ))
+            end
+            return string.format("ColorSequence.new({%s})", table.concat(serializedKeypoints, ", "))
+        end,
+        
+        NumberSequence = function(numberSequence)
+            local keypoints = numberSequence.Keypoints
+            local serializedKeypoints = {}
+            for _, keypoint in ipairs(keypoints) do
+                table.insert(serializedKeypoints, string.format("NumberSequenceKeypoint.new(%s, %s, %s)",
+                    keypoint.Time,
+                    keypoint.Value,
+                    keypoint.Envelope
+                ))
+            end
+            return string.format("NumberSequence.new({%s})", table.concat(serializedKeypoints, ", "))
+        end,
+        Color3 = function(color)
+            return string.format("Color3.fromRGB(%d, %d, %d)", 
+                math.floor(color.R * 255), 
+                math.floor(color.G * 255), 
+                math.floor(color.B * 255))
+        end,
+        UDim2 = function(udim)
+            return string.format("UDim2.new(%s, %s, %s, %s)", 
+                udim.X.Scale, udim.X.Offset, 
+                udim.Y.Scale, udim.Y.Offset)
+        end,
+        UDim = function(udim)
+            return string.format("UDim.new(%s, %s)", 
+                udim.Scale, udim.Offset)
+        end,
+        Rect = function(rect)
+            return string.format("Rect.new(%s, %s, %s, %s)", 
+                rect.Min.X, rect.Min.Y, rect.Max.X, rect.Max.Y)
+        end,
+        Vector2 = function(vector)
+            return string.format("Vector2.new(%s, %s)", vector.X, vector.Y)
+        end,
+        Enum = function(enum)
+            return tostring(enum)
+        end,
+        EnumItem = function(enumItem) 
+            return tostring(enumItem)
+        end,
+        Font = function(fontFace)
+            return string.format("Font.new(%q, Enum.FontWeight.%s, Enum.FontStyle.%s)", fontFace.Family, fontFace.Weight.Name, fontFace.Style.Name)
+        end,
+        number = function(value)
+            return tostring(value)
+        end,
+        boolean = function(value)
+            return tostring(value)
+        end,
+        string = function(value)
+            return string.format("%q", value)
+        end,
     },
-    Blue = {
-        Main = Color3.fromRGB(13, 17, 23),
-        Topbar = Color3.fromRGB(22, 27, 34),
-        Sidebar = Color3.fromRGB(1, 4, 9),
-        Card = Color3.fromRGB(22, 27, 34),
-        Text = Color3.fromRGB(240, 246, 252),
-        Accent = Color3.fromRGB(88, 166, 255),
-        Stroke = Color3.fromRGB(48, 54, 61)
-    }
+    Counters = {}
 }
 
-local currenttheme = themes.Dark
-
-local screen = Instance.new("ScreenGui")
-screen.Name = "axomicsystem"
-screen.ResetOnSpawn = false
-if runservice:IsStudio() then
-    screen.Parent = playergui
-else
-    pcall(function()
-        screen.Parent = coregui
-    end)
-    if screen.Parent ~= coregui then
-        screen.Parent = playergui
-    end
+function Gui:GenerateName(objectType)
+    Gui.Counters[objectType] = (Gui.Counters[objectType] or 0) + 1
+    return string.format("%s_%d", objectType, Gui.Counters[objectType])
 end
 
-local mainframe = Instance.new("Frame")
-mainframe.Name = "mainframe"
-mainframe.Size = UDim2.new(0, 640, 0, 420)
-mainframe.Position = UDim2.new(0.5, -320, 0.5, -210)
-mainframe.BackgroundColor3 = currenttheme.Main
-mainframe.BackgroundTransparency = 0.7
-mainframe.BorderSizePixel = 0
-mainframe.Active = true
-mainframe.Draggable = true
-mainframe.Parent = screen
-
-local mainstroke = Instance.new("UIStroke")
-mainstroke.Color = currenttheme.Stroke
-mainstroke.Thickness = 1
-mainstroke.Parent = mainframe
-
-local corner = Instance.new("UICorner")
-corner.CornerRadius = UDim.new(0, 8)
-corner.Parent = mainframe
-
-local topbar = Instance.new("Frame")
-topbar.Name = "topbar"
-topbar.Size = UDim2.new(1, 0, 0, 32)
-topbar.BackgroundColor3 = currenttheme.Topbar
-topbar.BackgroundTransparency = 0.7
-topbar.BorderSizePixel = 0
-topbar.Parent = mainframe
-
-local topbarcorner = Instance.new("UICorner")
-topbarcorner.CornerRadius = UDim.new(0, 8)
-topbarcorner.Parent = topbar
-
-local topbarfix = Instance.new("Frame")
-topbarfix.Size = UDim2.new(1, 0, 0, 8)
-topbarfix.Position = UDim2.new(0, 0, 1, -8)
-topbarfix.BackgroundColor3 = currenttheme.Topbar
-topbarfix.BackgroundTransparency = 0.7
-topbarfix.BorderSizePixel = 0
-topbarfix.Parent = topbar
-
-local iconlabel = Instance.new("TextLabel")
-iconlabel.Size = UDim2.new(0, 30, 1, 0)
-iconlabel.Position = UDim2.new(0, 8, 0, 0)
-iconlabel.BackgroundTransparency = 1
-iconlabel.Text = "⚡"
-iconlabel.TextColor3 = currenttheme.Accent
-iconlabel.TextSize = 14
-iconlabel.Font = Enum.Font.Code
-iconlabel.Parent = topbar
-
-local titlelabel = Instance.new("TextLabel")
-titlelabel.Size = UDim2.new(1, -250, 1, 0)
-titlelabel.Position = UDim2.new(0, 35, 0, 0)
-titlelabel.BackgroundTransparency = 1
-titlelabel.Text = "Axomic | Remote Spy"
-titlelabel.TextColor3 = currenttheme.Text
-titlelabel.TextSize = 12
-titlelabel.Font = Enum.Font.Code
-titlelabel.TextXAlignment = Enum.TextXAlignment.Left
-titlelabel.Parent = topbar
-
-local themebtn = Instance.new("TextButton")
-themebtn.Size = UDim2.new(0, 70, 0, 22)
-themebtn.Position = UDim2.new(1, -110, 0, 5)
-themebtn.BackgroundColor3 = currenttheme.Card
-themebtn.BackgroundTransparency = 0.7
-themebtn.Text = "Theme: Dark"
-themebtn.TextColor3 = currenttheme.Text
-themebtn.TextSize = 10
-themebtn.Font = Enum.Font.Code
-themebtn.Parent = topbar
-
-local themestroke = Instance.new("UIStroke")
-themestroke.Color = currenttheme.Stroke
-themestroke.Thickness = 1
-themestroke.Parent = themebtn
-
-local themecorner = Instance.new("UICorner")
-themecorner.CornerRadius = UDim.new(0, 4)
-themecorner.Parent = themebtn
-
-local closebtn = Instance.new("TextButton")
-closebtn.Size = UDim2.new(0, 32, 0, 32)
-closebtn.Position = UDim2.new(1, -32, 0, 0)
-closebtn.BackgroundTransparency = 1
-closebtn.Text = "✕"
-closebtn.TextColor3 = currenttheme.Text
-closebtn.TextSize = 12
-closebtn.Font = Enum.Font.Code
-closebtn.Parent = topbar
-
-local togglebtn = Instance.new("TextButton")
-togglebtn.Name = "togglebtn"
-togglebtn.Size = UDim2.new(0, 90, 0, 28)
-togglebtn.Position = UDim2.new(0, 10, 0, 10)
-togglebtn.BackgroundColor3 = currenttheme.Card
-togglebtn.BackgroundTransparency = 0.7
-togglebtn.Text = "Toggle"
-togglebtn.TextColor3 = currenttheme.Text
-togglebtn.TextSize = 11
-togglebtn.Font = Enum.Font.Code
-togglebtn.Parent = screen
-
-local togglestroke = Instance.new("UIStroke")
-togglestroke.Color = currenttheme.Stroke
-togglestroke.Thickness = 1
-togglestroke.Parent = togglebtn
-
-local togglecorner = Instance.new("UICorner")
-togglecorner.CornerRadius = UDim.new(0, 6)
-togglecorner.Parent = togglebtn
-
-local filterbar = Instance.new("Frame")
-filterbar.Size = UDim2.new(1, -200, 0, 28)
-filterbar.Position = UDim2.new(0, 192, 0, 40)
-filterbar.BackgroundTransparency = 1
-filterbar.Parent = mainframe
-
-local filterlayout = Instance.new("UIListLayout")
-filterlayout.FillDirection = Enum.FillDirection.Horizontal
-filterlayout.SortOrder = Enum.SortOrder.LayoutOrder
-filterlayout.Padding = UDim.new(0, 6)
-filterlayout.Parent = filterbar
-
-local function makefilterbtn(text)
-    local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(0, 70, 1, 0)
-    btn.BackgroundColor3 = currenttheme.Card
-    btn.BackgroundTransparency = 0.7
-    btn.Text = text
-    btn.TextColor3 = currenttheme.Text
-    btn.TextSize = 11
-    btn.Font = Enum.Font.Code
-    btn.Parent = filterbar
-
-    local stroke = Instance.new("UIStroke")
-    stroke.Color = currenttheme.Stroke
-    stroke.Thickness = 1
-    stroke.Parent = btn
-
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 4)
-    corner.Parent = btn
-    return btn
-end
-
-local ongoingbtn = makefilterbtn("Ongoing")
-local incomingbtn = makefilterbtn("Incoming")
-local allbtn = makefilterbtn("ALL")
-
-local sidebar = Instance.new("ScrollingFrame")
-sidebar.Name = "sidebar"
-sidebar.Size = UDim2.new(0, 180, 1, -80)
-sidebar.Position = UDim2.new(0, 8, 0, 72)
-sidebar.BackgroundColor3 = currenttheme.Sidebar
-sidebar.BackgroundTransparency = 0.7
-sidebar.BorderSizePixel = 0
-sidebar.CanvasSize = UDim2.new(0, 0, 0, 0)
-sidebar.ScrollBarThickness = 2
-sidebar.ScrollBarImageColor3 = currenttheme.Stroke
-sidebar.Parent = mainframe
-
-local sidebarstroke = Instance.new("UIStroke")
-sidebarstroke.Color = currenttheme.Stroke
-sidebarstroke.Thickness = 1
-sidebarstroke.Parent = sidebar
-
-local sidebarcorner = Instance.new("UICorner")
-sidebarcorner.CornerRadius = UDim.new(0, 6)
-sidebarcorner.Parent = sidebar
-
-local sidelayout = Instance.new("UIListLayout")
-sidelayout.SortOrder = Enum.SortOrder.LayoutOrder
-sidelayout.Padding = UDim.new(0, 4)
-sidelayout.Parent = sidebar
-
-local mainscroll = Instance.new("ScrollingFrame")
-mainscroll.Name = "mainscroll"
-mainscroll.Size = UDim2.new(1, -200, 1, -80)
-mainscroll.Position = UDim2.new(0, 192, 0, 72)
-mainscroll.BackgroundTransparency = 1
-mainscroll.BorderSizePixel = 0
-mainscroll.CanvasSize = UDim2.new(0, 0, 0, 0)
-mainscroll.ScrollBarThickness = 3
-mainscroll.ScrollBarImageColor3 = currenttheme.Stroke
-mainscroll.Parent = mainframe
-
-local mainlayout = Instance.new("UIListLayout")
-mainlayout.SortOrder = Enum.SortOrder.LayoutOrder
-mainlayout.VerticalAlignment = Enum.VerticalAlignment.Bottom
-mainlayout.Padding = UDim.new(0, 6)
-mainlayout.Parent = mainscroll
-
-local detailview = Instance.new("Frame")
-detailview.Name = "detailview"
-detailview.Size = UDim2.new(1, -200, 1, -80)
-detailview.Position = UDim2.new(0, 192, 0, 72)
-detailview.BackgroundColor3 = currenttheme.Sidebar
-detailview.BackgroundTransparency = 0.7
-detailview.BorderSizePixel = 0
-detailview.Visible = false
-detailview.Parent = mainframe
-
-local detailviewstroke = Instance.new("UIStroke")
-detailviewstroke.Color = currenttheme.Stroke
-detailviewstroke.Thickness = 1
-detailviewstroke.Parent = detailview
-
-local detailviewcorner = Instance.new("UICorner")
-detailviewcorner.CornerRadius = UDim.new(0, 6)
-detailviewcorner.Parent = detailview
-
-local tabbar = Instance.new("Frame")
-tabbar.Size = UDim2.new(1, -16, 0, 28)
-tabbar.Position = UDim2.new(0, 8, 0, 8)
-tabbar.BackgroundTransparency = 1
-tabbar.Parent = detailview
-
-local tablayout = Instance.new("UIListLayout")
-tablayout.FillDirection = Enum.FillDirection.Horizontal
-tablayout.SortOrder = Enum.SortOrder.LayoutOrder
-tablayout.Padding = UDim.new(0, 6)
-tablayout.Parent = tabbar
-
-local argstabbtn = Instance.new("TextButton")
-argstabbtn.Size = UDim2.new(0, 85, 1, 0)
-argstabbtn.BackgroundColor3 = currenttheme.Topbar
-argstabbtn.BackgroundTransparency = 0.7
-argstabbtn.Text = "Arguments"
-argstabbtn.TextColor3 = currenttheme.Text
-argstabbtn.TextSize = 11
-argstabbtn.Font = Enum.Font.Code
-argstabbtn.Parent = tabbar
-
-local argstabstroke = Instance.new("UIStroke")
-argstabstroke.Color = currenttheme.Stroke
-argstabstroke.Thickness = 1
-argstabstroke.Parent = argstabbtn
-
-local argstabcorner = Instance.new("UICorner")
-argstabcorner.CornerRadius = UDim.new(0, 4)
-argstabcorner.Parent = argstabbtn
-
-local codetabbtn = Instance.new("TextButton")
-codetabbtn.Size = UDim2.new(0, 65, 1, 0)
-codetabbtn.BackgroundColor3 = currenttheme.Card
-codetabbtn.BackgroundTransparency = 0.7
-codetabbtn.Text = "Code"
-codetabbtn.TextColor3 = currenttheme.Text
-codetabbtn.TextSize = 11
-codetabbtn.Font = Enum.Font.Code
-codetabbtn.Parent = tabbar
-
-local codetabstroke = Instance.new("UIStroke")
-codetabstroke.Color = currenttheme.Stroke
-codetabstroke.Thickness = 1
-codetabstroke.Parent = codetabbtn
-
-local codetabcorner = Instance.new("UICorner")
-codetabcorner.CornerRadius = UDim.new(0, 4)
-codetabcorner.Parent = codetabbtn
-
-local infotabbtn = Instance.new("TextButton")
-infotabbtn.Size = UDim2.new(0, 95, 1, 0)
-infotabbtn.BackgroundColor3 = currenttheme.Card
-infotabbtn.BackgroundTransparency = 0.7
-infotabbtn.Text = "Function Info"
-infotabbtn.TextColor3 = currenttheme.Text
-infotabbtn.TextSize = 11
-infotabbtn.Font = Enum.Font.Code
-infotabbtn.Parent = tabbar
-
-local infotabstroke = Instance.new("UIStroke")
-infotabstroke.Color = currenttheme.Stroke
-infotabstroke.Thickness = 1
-infotabstroke.Parent = infotabbtn
-
-local infotabcorner = Instance.new("UICorner")
-infotabcorner.CornerRadius = UDim.new(0, 4)
-infotabcorner.Parent = infotabbtn
-
-local itemscroll = Instance.new("ScrollingFrame")
-itemscroll.Name = "itemscroll"
-itemscroll.Size = UDim2.new(1, -16, 1, -85)
-itemscroll.Position = UDim2.new(0, 8, 0, 44)
-itemscroll.BackgroundColor3 = currenttheme.Main
-itemscroll.BackgroundTransparency = 0.7
-itemscroll.BorderSizePixel = 0
-itemscroll.CanvasSize = UDim2.new(0, 0, 0, 0)
-itemscroll.ScrollBarThickness = 3
-itemscroll.ScrollBarImageColor3 = currenttheme.Stroke
-itemscroll.Parent = detailview
-
-local itemscrollstroke = Instance.new("UIStroke")
-itemscrollstroke.Color = currenttheme.Stroke
-itemscrollstroke.Thickness = 1
-itemscrollstroke.Parent = itemscroll
-
-local itemscrollcorner = Instance.new("UICorner")
-itemscrollcorner.CornerRadius = UDim.new(0, 4)
-itemscrollcorner.Parent = itemscroll
-
-local itemlayout = Instance.new("UIListLayout")
-itemlayout.SortOrder = Enum.SortOrder.LayoutOrder
-itemlayout.Padding = UDim.new(0, 4)
-itemlayout.Parent = itemscroll
-
-local actionbar = Instance.new("Frame")
-actionbar.Size = UDim2.new(1, -16, 0, 28)
-actionbar.Position = UDim2.new(0, 8, 1, -34)
-actionbar.BackgroundTransparency = 1
-actionbar.Parent = detailview
-
-local actionlayout = Instance.new("UIListLayout")
-actionlayout.FillDirection = Enum.FillDirection.Horizontal
-actionlayout.SortOrder = Enum.SortOrder.LayoutOrder
-actionlayout.Padding = UDim.new(0, 6)
-actionlayout.Parent = actionbar
-
-local firecontrolbtn = Instance.new("TextButton")
-firecontrolbtn.Size = UDim2.new(0, 70, 1, 0)
-firecontrolbtn.BackgroundColor3 = currenttheme.Card
-firecontrolbtn.BackgroundTransparency = 0.7
-firecontrolbtn.Text = "Fire"
-firecontrolbtn.TextColor3 = currenttheme.Text
-firecontrolbtn.TextSize = 11
-firecontrolbtn.Font = Enum.Font.Code
-firecontrolbtn.Parent = actionbar
-
-local firestroke = Instance.new("UIStroke")
-firestroke.Color = currenttheme.Stroke
-firestroke.Thickness = 1
-firestroke.Parent = firecontrolbtn
-
-local firecorner = Instance.new("UICorner")
-firecorner.CornerRadius = UDim.new(0, 4)
-firecorner.Parent = firecontrolbtn
-
-local copycontrolbtn = Instance.new("TextButton")
-copycontrolbtn.Size = UDim2.new(0, 70, 1, 0)
-copycontrolbtn.BackgroundColor3 = currenttheme.Card
-copycontrolbtn.BackgroundTransparency = 0.7
-copycontrolbtn.Text = "Copy"
-copycontrolbtn.TextColor3 = currenttheme.Text
-copycontrolbtn.TextSize = 11
-copycontrolbtn.Font = Enum.Font.Code
-copycontrolbtn.Parent = actionbar
-
-local copystroke = Instance.new("UIStroke")
-copystroke.Color = currenttheme.Stroke
-copystroke.Thickness = 1
-copystroke.Parent = copycontrolbtn
-
-local copycorner = Instance.new("UICorner")
-copycorner.CornerRadius = UDim.new(0, 4)
-copycorner.Parent = copycontrolbtn
-
-local backcontrolbtn = Instance.new("TextButton")
-backcontrolbtn.Size = UDim2.new(0, 70, 1, 0)
-backcontrolbtn.BackgroundColor3 = currenttheme.Card
-backcontrolbtn.BackgroundTransparency = 0.7
-backcontrolbtn.Text = "Back"
-backcontrolbtn.TextColor3 = currenttheme.Text
-backcontrolbtn.TextSize = 11
-backcontrolbtn.Font = Enum.Font.Code
-backcontrolbtn.Parent = actionbar
-
-local backstroke = Instance.new("UIStroke")
-backstroke.Color = currenttheme.Stroke
-backstroke.Thickness = 1
-backstroke.Parent = backcontrolbtn
-
-local backcorner = Instance.new("UICorner")
-backcorner.CornerRadius = UDim.new(0, 4)
-backcorner.Parent = backcontrolbtn
-
-local activeobject = nil
-local activeargs = {}
-local activetab = "args"
-local currentfilter = "ALL"
-local allcards = {}
-
-local function applytheme(t)
-    currenttheme = t
-    mainframe.BackgroundColor3 = t.Main
-    mainstroke.Color = t.Stroke
-    topbar.BackgroundColor3 = t.Topbar
-    topbarfix.BackgroundColor3 = t.Topbar
-    iconlabel.TextColor3 = t.Accent
-    titlelabel.TextColor3 = t.Text
-    themebtn.BackgroundColor3 = t.Card
-    themebtn.TextColor3 = t.Text
-    themestroke.Color = t.Stroke
-    togglebtn.BackgroundColor3 = t.Card
-    togglebtn.TextColor3 = t.Text
-    togglestroke.Color = t.Stroke
-    sidebar.BackgroundColor3 = t.Sidebar
-    sidebar.ScrollBarImageColor3 = t.Stroke
-    sidebarstroke.Color = t.Stroke
-    detailview.BackgroundColor3 = t.Sidebar
-    detailviewstroke.Color = t.Stroke
-    itemscroll.BackgroundColor3 = t.Main
-    itemscroll.ScrollBarImageColor3 = t.Stroke
-    itemscrollstroke.Color = t.Stroke
-    for _, btn in ipairs({ongoingbtn, incomingbtn, allbtn, argstabbtn, codetabbtn, infotabbtn, firecontrolbtn, copycontrolbtn, backcontrolbtn}) do
-        btn.BackgroundColor3 = t.Card
-        btn.TextColor3 = t.Text
-        local s = btn:FindFirstChildOfClass("UIStroke")
-        if s then s.Color = t.Stroke end
-    end
-end
-
-themebtn.MouseButton1Click:Connect(function()
-    if currenttheme == themes.Dark then
-        applytheme(themes.Light)
-        themebtn.Text = "Theme: Light"
-    elseif currenttheme == themes.Light then
-        applytheme(themes.Blue)
-        themebtn.Text = "Theme: Blue"
-    else
-        applytheme(themes.Dark)
-        themebtn.Text = "Theme: Dark"
-    end
-end)
-
-local function gettype(val)
-    local t = typeof(val)
-    if t == "Instance" then
-        return "Instance"
-    elseif t == "Color3" then
-        return "Color3"
-    elseif t == "BrickColor" then
-        return "BrickColor"
-    elseif t == "CFrame" then
-        return "CFrame"
-    elseif t == "Vector3" then
-        return "Vector3"
-    elseif t == "number" then
-        return "number"
-    elseif t == "string" then
-        return "string"
-    elseif t == "boolean" then
-        return "boolean"
-    else
-        return t
-    end
-end
-
-local function clearitems()
-    for _, child in ipairs(itemscroll:GetChildren()) do
-        if child:IsA("Frame") then
-            child:Destroy()
-        end
-    end
-end
-
-local function renderargs()
-    clearitems()
-    for idx, val in ipairs(activeargs) do
-        local row = Instance.new("Frame")
-        row.Size = UDim2.new(1, 0, 0, 26)
-        row.BackgroundColor3 = currenttheme.Card
-        row.BackgroundTransparency = 0.7
-        row.BorderSizePixel = 0
-        row.Parent = itemscroll
-
-        local rowstroke = Instance.new("UIStroke")
-        rowstroke.Color = currenttheme.Stroke
-        rowstroke.Thickness = 1
-        rowstroke.Parent = row
-
-        local rowcorner = Instance.new("UICorner")
-        rowcorner.CornerRadius = UDim.new(0, 3)
-        rowcorner.Parent = row
-
-        local idxlabel = Instance.new("TextLabel")
-        idxlabel.Size = UDim2.new(0, 30, 1, 0)
-        idxlabel.Position = UDim2.new(0, 6, 0, 0)
-        idxlabel.BackgroundTransparency = 1
-        idxlabel.Text = tostring(idx)
-        idxlabel.TextColor3 = currenttheme.Text
-        idxlabel.TextSize = 11
-        idxlabel.Font = Enum.Font.Code
-        idxlabel.TextXAlignment = Enum.TextXAlignment.Left
-        idxlabel.Parent = row
-
-        local vallabel = Instance.new("TextLabel")
-        vallabel.Size = UDim2.new(1, -110, 1, 0)
-        vallabel.Position = UDim2.new(0, 35, 0, 0)
-        vallabel.BackgroundTransparency = 1
-        vallabel.Text = tostring(val)
-        vallabel.TextColor3 = currenttheme.Accent
-        vallabel.TextSize = 11
-        vallabel.Font = Enum.Font.Code
-        vallabel.TextXAlignment = Enum.TextXAlignment.Left
-        vallabel.Parent = row
-
-        local typelabel = Instance.new("TextLabel")
-        typelabel.Size = UDim2.new(0, 70, 1, 0)
-        typelabel.Position = UDim2.new(1, -75, 0, 0)
-        typelabel.BackgroundTransparency = 1
-        typelabel.Text = gettype(val)
-        typelabel.TextColor3 = currenttheme.Text
-        typelabel.TextSize = 11
-        typelabel.Font = Enum.Font.Code
-        typelabel.TextXAlignment = Enum.TextXAlignment.Right
-        typelabel.Parent = row
-    end
-    itemscroll.CanvasSize = UDim2.new(0, 0, 0, itemlayout.AbsoluteContentSize.Y)
-end
-
-local function rendercode()
-    clearitems()
-    local row = Instance.new("Frame")
-    row.Size = UDim2.new(1, 0, 0, 120)
-    row.BackgroundColor3 = currenttheme.Card
-    row.BackgroundTransparency = 0.7
-    row.BorderSizePixel = 0
-    row.Parent = itemscroll
-
-    local codelabel = Instance.new("TextLabel")
-    codelabel.Size = UDim2.new(1, -12, 1, 0)
-    codelabel.Position = UDim2.new(0, 6, 0, 0)
-    codelabel.BackgroundTransparency = 1
-    codelabel.Text = "local remote = " .. tostring(activeobject and activeobject:GetFullName() or "nil") .. "\nremote:FireServer()"
-    codelabel.TextColor3 = currenttheme.Text
-    codelabel.TextSize = 11
-    codelabel.Font = Enum.Font.Code
-    codelabel.TextXAlignment = Enum.TextXAlignment.Left
-    codelabel.TextYAlignment = Enum.TextYAlignment.Top
-    codelabel.Parent = row
-    itemscroll.CanvasSize = UDim2.new(0, 0, 0, itemlayout.AbsoluteContentSize.Y)
-end
-
-local function renderinfo()
-    clearitems()
-    local row = Instance.new("Frame")
-    row.Size = UDim2.new(1, 0, 0, 100)
-    row.BackgroundColor3 = currenttheme.Card
-    row.BackgroundTransparency = 0.7
-    row.BorderSizePixel = 0
-    row.Parent = itemscroll
-
-    local infolabel = Instance.new("TextLabel")
-    infolabel.Size = UDim2.new(1, -12, 1, 0)
-    infolabel.Position = UDim2.new(0, 6, 0, 0)
-    infolabel.BackgroundTransparency = 1
-    infolabel.Text = "Name: " .. tostring(activeobject and activeobject.Name or "") .. "\nClass: " .. tostring(activeobject and activeobject.ClassName or "") .. "\nPath: " .. tostring(activeobject and activeobject:GetFullName() or "")
-    infolabel.TextColor3 = currenttheme.Text
-    infolabel.TextSize = 11
-    infolabel.Font = Enum.Font.Code
-    infolabel.TextXAlignment = Enum.TextXAlignment.Left
-    infolabel.TextYAlignment = Enum.TextYAlignment.Top
-    infolabel.Parent = row
-    itemscroll.CanvasSize = UDim2.new(0, 0, 0, itemlayout.AbsoluteContentSize.Y)
-end
-
-local function updatefilter()
-    for _, item in ipairs(allcards) do
-        if currentfilter == "ALL" then
-            item.Card.Visible = true
-            item.SideBtn.Visible = true
-        elseif currentfilter == "Ongoing" and item.Type == "Outgoing" then
-            item.Card.Visible = true
-            item.SideBtn.Visible = true
-        elseif currentfilter == "Incoming" and item.Type == "Incoming" then
-            item.Card.Visible = true
-            item.SideBtn.Visible = true
-        else
-            item.Card.Visible = false
-            item.SideBtn.Visible = false
-        end
-    end
-    mainscroll.CanvasSize = UDim2.new(0, 0, 0, mainlayout.AbsoluteContentSize.Y)
-    sidebar.CanvasSize = UDim2.new(0, 0, 0, sidelayout.AbsoluteContentSize.Y)
-end
-
-ongoingbtn.MouseButton1Click:Connect(function()
-    currentfilter = "Ongoing"
-    updatefilter()
-end)
-
-incomingbtn.MouseButton1Click:Connect(function()
-    currentfilter = "Incoming"
-    updatefilter()
-end)
-
-allbtn.MouseButton1Click:Connect(function()
-    currentfilter = "ALL"
-    updatefilter()
-end)
-
-local function addlog(remotetype, remotename, remoteobj, args)
-    local card = Instance.new("Frame")
-    card.Size = UDim2.new(1, -12, 0, 65)
-    card.BackgroundColor3 = currenttheme.Card
-    card.BackgroundTransparency = 0.7
-    card.BorderSizePixel = 0
-    card.Parent = mainscroll
-
-    local cardstroke = Instance.new("UIStroke")
-    cardstroke.Color = currenttheme.Stroke
-    cardstroke.Thickness = 1
-    cardstroke.Parent = card
-
-    local cardcorner = Instance.new("UICorner")
-    cardcorner.CornerRadius = UDim.new(0, 4)
-    cardcorner.Parent = card
-
-    local headerlbl = Instance.new("TextLabel")
-    headerlbl.Size = UDim2.new(1, -12, 0, 20)
-    headerlbl.Position = UDim2.new(0, 6, 0, 4)
-    headerlbl.BackgroundTransparency = 1
-    headerlbl.Text = remotename .. " (" .. remotetype .. ")"
-    headerlbl.TextColor3 = currenttheme.Text
-    headerlbl.TextSize = 11
-    headerlbl.Font = Enum.Font.Code
-    headerlbl.TextXAlignment = Enum.TextXAlignment.Left
-    headerlbl.Parent = card
-
-    local argslbl = Instance.new("TextLabel")
-    argslbl.Size = UDim2.new(1, -12, 0, 18)
-    argslbl.Position = UDim2.new(0, 6, 0, 24)
-    argslbl.BackgroundTransparency = 1
-    argslbl.Text = "1 " .. '"' .. tostring(args[1] or "") .. '"'
-    argslbl.TextColor3 = currenttheme.Accent
-    argslbl.TextSize = 11
-    argslbl.Font = Enum.Font.Code
-    argslbl.TextXAlignment = Enum.TextXAlignment.Left
-    argslbl.Parent = card
-
-    local timelbl = Instance.new("TextLabel")
-    timelbl.Size = UDim2.new(1, -12, 0, 16)
-    timelbl.Position = UDim2.new(0, 6, 0, 43)
-    timelbl.BackgroundTransparency = 1
-    timelbl.Text = os.date("%H:%M:%S")
-    timelbl.TextColor3 = currenttheme.Text
-    timelbl.TextSize = 10
-    timelbl.Font = Enum.Font.Code
-    timelbl.TextXAlignment = Enum.TextXAlignment.Left
-    timelbl.Parent = card
-
-    local openbtn = Instance.new("TextButton")
-    openbtn.Size = UDim2.new(1, 0, 1, 0)
-    openbtn.BackgroundTransparency = 1
-    openbtn.Text = ""
-    openbtn.Parent = card
-
-    openbtn.MouseButton1Click:Connect(function()
-        activeobject = remoteobj
-        activeargs = args
-        mainscroll.Visible = false
-        detailview.Visible = true
-        if activetab == "args" then
-            renderargs()
-        elseif activetab == "code" then
-            rendercode()
-        else
-            renderinfo()
-        end
-    end)
-
-    local sidebtn = Instance.new("TextButton")
-    sidebtn.Size = UDim2.new(1, -8, 0, 32)
-    sidebtn.Position = UDim2.new(0, 4, 0, 0)
-    sidebtn.BackgroundColor3 = currenttheme.Card
-    sidebtn.BackgroundTransparency = 0.7
-    sidebtn.Text = remotename
-    sidebtn.TextColor3 = currenttheme.Text
-    sidebtn.TextSize = 11
-    sidebtn.Font = Enum.Font.Code
-    sidebtn.Parent = sidebar
-
-    local btnstroke = Instance.new("UIStroke")
-    btnstroke.Color = currenttheme.Stroke
-    btnstroke.Thickness = 1
-    btnstroke.Parent = sidebtn
-
-    local btncorner = Instance.new("UICorner")
-    btncorner.CornerRadius = UDim.new(0, 4)
-    btncorner.Parent = sidebtn
-
-    sidebtn.MouseButton1Click:Connect(function()
-        mainscroll.Visible = false
-        detailview.Visible = true
-        activeobject = remoteobj
-        activeargs = args
-        if activetab == "args" then
-            renderargs()
-        elseif activetab == "code" then
-            rendercode()
-        else
-            renderinfo()
-        end
-    end)
-
-    table.insert(allcards, {Card = card, SideBtn = sidebtn, Type = remotetype})
-    updatefilter()
-end
-
-local function hookremotes()
-    local mt = getrawmetatable(game)
-    setreadonly(mt, false)
-    local oldnamecall = mt.__namecall
-
-    mt.__namecall = newcclosure(function(self, ...)
-        local method = getnamecallmethod()
-        if method == "FireServer" or method == "fireServer" or method == "InvokeServer" or method == "invokeServer" then
-            local args = {...}
-            if self:IsA("RemoteEvent") then
-                addlog("Outgoing", self.Name, self, args)
-            elseif self:IsA("UnreliableRemoteEvent") then
-                addlog("Outgoing", self.Name, self, args)
-            elseif self:IsA("RemoteFunction") then
-                addlog("Outgoing", self.Name, self, args)
+function Gui:SerializeObject(object, parentVar)
+    local output = ""
+    local name = Gui:GenerateName(object.ClassName)
+    
+    output = output .. string.format("local %s = Instance.new(%q)\n", name, object.ClassName)
+    output = output .. string.format("%s.Parent = %s\n", name, parentVar or "game.CoreGui")
+    
+    for _, property in next, Gui.Properties do
+        local success, value = pcall(function() return object[property] end)
+        if success and value ~= nil then
+            local serializer = Gui.Serializers[typeof(value)]
+            if serializer then
+                output = output .. string.format("%s.%s = %s\n", name, property, serializer(value))
             end
         end
-        return oldnamecall(self, ...)
-    end)
-
-    setreadonly(mt, true)
-
-    for _, obj in ipairs(game:GetDescendants()) do
-        if obj:IsA("RemoteEvent") then
-            obj.OnClientEvent:Connect(function(...)
-                addlog("Incoming", obj.Name, obj, {...})
-            end)
-        elseif obj:IsA("UnreliableRemoteEvent") then
-            obj.OnClientEvent:Connect(function(...)
-                addlog("Incoming", obj.Name, obj, {...})
-            end)
+    end
+    
+    for _, child in ipairs(object:GetChildren()) do
+        if child:IsA("BaseScript") then
+            local scriptCode = pcall(function() return child.Source end)
+            if scriptCode then
+                output = output .. string.format("-- Embedded Script: %s\n", child:GetFullName())
+                output = output .. scriptCode .. "\n"
+            end
+        else
+            output = output .. Gui:SerializeObject(child, name)
         end
     end
-
-    game.DescendantAdded:Connect(function(obj)
-        if obj:IsA("RemoteEvent") then
-            obj.OnClientEvent:Connect(function(...)
-                addlog("Incoming", obj.Name, obj, {...})
-            end)
-        elseif obj:IsA("UnreliableRemoteEvent") then
-            obj.OnClientEvent:Connect(function(...)
-                addlog("Incoming", obj.Name, obj, {...})
-            end)
-        end
-    end)
+    
+    return output
 end
 
-closebtn.MouseButton1Click:Connect(function()
-    screen:Destroy()
-end)
-
-togglebtn.MouseButton1Click:Connect(function()
-    mainframe.Visible = not mainframe.Visible
-end)
-
-argstabbtn.MouseButton1Click:Connect(function()
-    activetab = "args"
-    renderargs()
-end)
-
-codetabbtn.MouseButton1Click:Connect(function()
-    activetab = "code"
-    rendercode()
-end)
-
-infotabbtn.MouseButton1Click:Connect(function()
-    activetab = "info"
-    renderinfo()
-end)
-
-backcontrolbtn.MouseButton1Click:Connect(function()
-    detailview.Visible = false
-    mainscroll.Visible = true
-    activeobject = nil
-end)
-
-copycontrolbtn.MouseButton1Click:Connect(function()
-    if setclipboard then
-        setclipboard(tostring(activeobject and activeobject:GetFullName() or ""))
+function Gui:Save(object, filename)
+    local luaCode = Gui:SerializeObject(object)
+    if not isfolder("axomGui2Lua") then
+        makefolder("axomGui2Lua")
     end
-end)
+    writefile(filename, luaCode)
+    return luaCode
+end
 
-firecontrolbtn.MouseButton1Click:Connect(function()
-    if activeobject then
-        pcall(function()
-            if activeobject:IsA("RemoteEvent") then
-                activeobject:FireServer(unpack(activeargs))
-            elseif activeobject:IsA("UnreliableRemoteEvent") then
-                activeobject:FireServer(unpack(activeargs))
-            elseif activeobject:IsA("RemoteFunction") then
-                activeobject:InvokeServer(unpack(activeargs))
+function getFullPath(obj)
+    local path = {}
+    while obj and not obj:IsA("DataModel") do
+        table.insert(path, 1, obj.Name)
+        obj = obj.Parent
+    end
+    return table.concat(path, ".")
+end
+
+function UI()
+    local ButtonColor = Color3.new(1,1,1)
+    if game.CoreGui:FindFirstChild("axomGui2Lua") then
+        game.CoreGui:FindFirstChild("axomGui2Lua"):Destroy()
+    end
+    local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
+    ScreenGui.Name = "axomGui2Lua"
+    
+    local Size = UDim2.new(0,350,0,200)
+    
+    local CanvasGroup = Instance.new("CanvasGroup", ScreenGui)
+    CanvasGroup.Size = Size
+    CanvasGroup.Position = UDim2.new(0.5,0,0.5,0)
+    CanvasGroup.AnchorPoint = Vector2.new(0.5,0.5)
+    CanvasGroup.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+    CanvasGroup.BackgroundTransparency = 0.6
+    CanvasGroup.ClipsDescendants = true
+
+    local dragging, dragInput, dragStart, startPos
+    local function update(input)
+        local delta = input.Position - dragStart
+        CanvasGroup.Position = UDim2.new(
+            startPos.X.Scale, startPos.X.Offset + delta.X,
+            startPos.Y.Scale, startPos.Y.Offset + delta.Y
+            )
+    end
+    CanvasGroup.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging  = true
+            dragStart = input.Position
+            startPos  = CanvasGroup.Position
+            
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
+        end
+    end)
+    CanvasGroup.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+            dragInput = input
+        end
+    end)
+    
+    UserInputService.InputChanged:Connect(function(input)
+        if input == dragInput and dragging then
+            update(input)
+        end
+    end)
+    
+    local UICorner = Instance.new("UICorner", CanvasGroup)
+    UICorner.CornerRadius = UDim.new(0,12)
+    
+    local UIPadding = Instance.new("UIPadding", CanvasGroup)
+    UIPadding.PaddingTop = UDim.new(0,10)
+    UIPadding.PaddingLeft = UDim.new(0,10)
+    UIPadding.PaddingRight = UDim.new(0,10)
+    UIPadding.PaddingBottom = UDim.new(0,10)
+    
+    local UIListLayout = Instance.new("UIListLayout", CanvasGroup)
+    UIListLayout.FillDirection = "Vertical"
+    UIListLayout.SortOrder = "LayoutOrder"
+    UIListLayout.Padding = UDim.new(0,10)
+    
+    local TextLabel = Instance.new("TextLabel", CanvasGroup)
+    TextLabel.Size = UDim2.new(1,0,0,0)
+    TextLabel.TextXAlignment = "Left"
+    TextLabel.AutomaticSize = "Y"
+    TextLabel.FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.SemiBold)
+    TextLabel.BackgroundTransparency = 1
+    TextLabel.TextColor3 = Color3.new(1,1,1)
+    TextLabel.Text = "axomGui2Lua"
+    TextLabel.TextSize = 22
+    TextLabel.TextWrapped = true
+    TextLabel.LayoutOrder = 1
+    
+    local ImageButton = Instance.new("ImageButton", TextLabel)
+    ImageButton.Size = UDim2.new(0,TextLabel.AbsoluteSize.Y,0,TextLabel.AbsoluteSize.Y)
+    ImageButton.Position = UDim2.new(1,0,0,0)
+    ImageButton.AnchorPoint= Vector2.new(1,0)
+    ImageButton.BackgroundTransparency = 1
+    ImageButton.Image = "rbxassetid://10747384394"
+    
+    local Closed = false
+    
+    ImageButton.MouseButton1Click:Connect(function()
+        if not Closed then
+            TweenService:Create(CanvasGroup, TweenInfo.new(0.45, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+                Size = UDim2.new(
+                    0,
+                    TextLabel.TextBounds.X + UIPadding.PaddingLeft.Offset*3 + TextLabel.TextBounds.Y,
+                    0,
+                    TextLabel.TextBounds.Y + UIPadding.PaddingTop.Offset*2
+                )
+            }):Play()
+            TweenService:Create(ImageButton, TweenInfo.new(.25), {Rotation = 45}):Play()
+        else
+            TweenService:Create(CanvasGroup, TweenInfo.new(0.45, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+                Size = Size
+            }):Play()
+            
+            TweenService:Create(ImageButton, TweenInfo.new(.25), {Rotation = 0}):Play()
+        end
+        Closed = not Closed
+    end)
+    
+    local TextBox = Instance.new("TextBox", CanvasGroup)
+    TextBox.Size = UDim2.new(1,0,0,40)
+    TextBox.TextWrapped = true
+    TextBox.TextXAlignment = Enum.TextXAlignment.Left
+    TextBox.FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.SemiBold)
+    TextBox.Text = ""
+    TextBox.TextColor3 = Color3.new(1,1,1)
+    TextBox.PlaceholderText = "Enter path, loadstring, or URL..."
+    TextBox.TextSize = 18
+    TextBox.BackgroundColor3 = Color3.new(1,1,1)
+    TextBox.BackgroundTransparency = 0.95
+    TextBox.ClearTextOnFocus = false
+    TextBox.LayoutOrder = 2
+    
+    local TextBoxCorner = Instance.new("UICorner", TextBox)
+    TextBoxCorner.CornerRadius = UDim.new(0,8)
+    
+    local TextBoxStroke = Instance.new("UIStroke", TextBox)
+    TextBoxStroke.Thickness = 0.6
+    TextBoxStroke.Color = Color3.new(1,1,1)
+    TextBoxStroke.Transparency = 0.8
+    
+    local TextButton = Instance.new("TextButton", CanvasGroup)
+    TextButton.Size = UDim2.new(1,0,0,35)
+    TextButton.Text = "Convert"
+    TextButton.AutoButtonColor = false
+    TextButton.TextColor3 = Color3.new(0,0,0)
+    TextButton.BackgroundColor3 = ButtonColor
+    TextButton.FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.SemiBold)
+    TextButton.TextSize = 18
+    TextButton.LayoutOrder = 3
+    
+    TextButton.MouseEnter:Connect(function()
+        TweenService:Create(TextButton, TweenInfo.new(.1), {
+            BackgroundColor3 = Color3.new(
+                ButtonColor.R-.4,
+                ButtonColor.G-.4,
+                ButtonColor.B-.4
+            )
+        }):Play()
+    end)
+    TextButton.MouseLeave:Connect(function()
+        TweenService:Create(TextButton, TweenInfo.new(.1), {
+            BackgroundColor3 = ButtonColor
+        }):Play()
+    end)
+    
+    local function ShowNotification(message)
+        local notification = Instance.new("TextLabel", ScreenGui)
+        notification.Size = UDim2.new(0,300,0,50)
+        notification.Position = UDim2.new(0.5,0,1,-60)
+        notification.AnchorPoint = Vector2.new(0.5,1)
+        notification.BackgroundColor3 = Color3.fromRGB(50,50,50)
+        notification.BackgroundTransparency = 0.2
+        notification.TextColor3 = Color3.new(1,1,1)
+        notification.Text = message
+        notification.TextSize = 14
+        notification.FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.SemiBold)
+        notification.TextWrapped = true
+        notification.ClipsDescendants = true
+        
+        local notifCorner = Instance.new("UICorner", notification)
+        notifCorner.CornerRadius = UDim.new(0,8)
+        
+        notification.BackgroundTransparency = 0.2
+        TweenService:Create(notification, TweenInfo.new(0.3), {BackgroundTransparency = 0}):Play()
+        
+        task.wait(3)
+        
+        TweenService:Create(notification, TweenInfo.new(0.3), {BackgroundTransparency = 1}):Play()
+        task.wait(0.3)
+        notification:Destroy()
+    end
+
+    local OutputContainer = Instance.new("Frame", CanvasGroup)
+    OutputContainer.Size = UDim2.new(1,0,0,0)
+    OutputContainer.BackgroundTransparency = 1
+    OutputContainer.LayoutOrder = 9
+    OutputContainer.Visible = false
+
+    local OutputLayout = Instance.new("UIListLayout", OutputContainer)
+    OutputLayout.FillDirection = Enum.FillDirection.Vertical
+    OutputLayout.Padding = UDim.new(0,5)
+    OutputLayout.SortOrder = Enum.SortOrder.LayoutOrder
+
+    local CodeScrollingFrame = Instance.new("ScrollingFrame", OutputContainer)
+    CodeScrollingFrame.Size = UDim2.new(1,0,0,150)
+    CodeScrollingFrame.BackgroundTransparency = 0.8
+    CodeScrollingFrame.BackgroundColor3 = Color3.fromRGB(30,30,30)
+    CodeScrollingFrame.ScrollBarThickness = 8
+    CodeScrollingFrame.BorderSizePixel = 0
+    CodeScrollingFrame.CanvasSize = UDim2.new(0,0,0,0)
+    CodeScrollingFrame.LayoutOrder = 1
+
+    local CodeTextBox = Instance.new("TextBox", CodeScrollingFrame)
+    CodeTextBox.Size = UDim2.new(1,0,0,0)
+    CodeTextBox.AutomaticSize = Enum.AutomaticSize.Y
+    CodeTextBox.TextWrapped = true
+    CodeTextBox.TextXAlignment = Enum.TextXAlignment.Left
+    CodeTextBox.TextYAlignment = Enum.TextYAlignment.Top
+    CodeTextBox.BackgroundTransparency = 1
+    CodeTextBox.TextColor3 = Color3.new(1,1,1)
+    CodeTextBox.FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Regular)
+    CodeTextBox.TextSize = 14
+    CodeTextBox.MultiLine = true
+    CodeTextBox.ClearTextOnFocus = false
+    CodeTextBox.Text = ""
+    CodeTextBox.RichText = false
+    CodeTextBox.PlaceholderText = "Output will appear here"
+
+    local function updateCanvasSize()
+        CodeScrollingFrame.CanvasSize = UDim2.new(0,0,0,CodeTextBox.AbsoluteContentSizeY + 10)
+    end
+    CodeTextBox:GetPropertyChangedSignal("Text"):Connect(updateCanvasSize)
+    CodeTextBox:GetPropertyChangedSignal("AbsoluteContentSizeY"):Connect(updateCanvasSize)
+
+    local ButtonRow = Instance.new("Frame", OutputContainer)
+    ButtonRow.Size = UDim2.new(1,0,0,30)
+    ButtonRow.BackgroundTransparency = 1
+    ButtonRow.LayoutOrder = 2
+
+    local rowLayout = Instance.new("UIListLayout", ButtonRow)
+    rowLayout.FillDirection = Enum.FillDirection.Horizontal
+    rowLayout.Padding = UDim.new(0,10)
+    rowLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
+
+    local CopyButton = Instance.new("TextButton", ButtonRow)
+    CopyButton.Size = UDim2.new(0,80,0,30)
+    CopyButton.Text = "Copy"
+    CopyButton.AutoButtonColor = false
+    CopyButton.TextColor3 = Color3.new(1,1,1)
+    CopyButton.BackgroundColor3 = Color3.fromRGB(70,70,70)
+    CopyButton.FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.SemiBold)
+    CopyButton.TextSize = 16
+
+    CopyButton.MouseEnter:Connect(function()
+        TweenService:Create(CopyButton, TweenInfo.new(.1), {BackgroundColor3 = Color3.fromRGB(90,90,90)}):Play()
+    end)
+    CopyButton.MouseLeave:Connect(function()
+        TweenService:Create(CopyButton, TweenInfo.new(.1), {BackgroundColor3 = Color3.fromRGB(70,70,70)}):Play()
+    end)
+
+    local SaveButton = Instance.new("TextButton", ButtonRow)
+    SaveButton.Size = UDim2.new(0,80,0,30)
+    SaveButton.Text = "Save"
+    SaveButton.AutoButtonColor = false
+    SaveButton.TextColor3 = Color3.new(1,1,1)
+    SaveButton.BackgroundColor3 = Color3.fromRGB(70,70,70)
+    SaveButton.FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.SemiBold)
+    SaveButton.TextSize = 16
+
+    SaveButton.MouseEnter:Connect(function()
+        TweenService:Create(SaveButton, TweenInfo.new(.1), {BackgroundColor3 = Color3.fromRGB(90,90,90)}):Play()
+    end)
+    SaveButton.MouseLeave:Connect(function()
+        TweenService:Create(SaveButton, TweenInfo.new(.1), {BackgroundColor3 = Color3.fromRGB(70,70,70)}):Play()
+    end)
+
+    local currentOutputFilename = nil
+
+    CopyButton.MouseButton1Click:Connect(function()
+        if CodeTextBox.Text ~= "" then
+            setclipboard(CodeTextBox.Text)
+            ShowNotification("Copied to clipboard")
+        else
+            ShowNotification("Nothing to copy")
+        end
+    end)
+
+    SaveButton.MouseButton1Click:Connect(function()
+        if currentOutputFilename and CodeTextBox.Text ~= "" then
+            if not isfolder("axomGui2Lua") then
+                makefolder("axomGui2Lua")
+            end
+            writefile(currentOutputFilename, CodeTextBox.Text)
+            ShowNotification("Saved to: " .. currentOutputFilename)
+        else
+            ShowNotification("No output to save")
+        end
+    end)
+
+    local function ShowOutput(code, filename)
+        CodeTextBox.Text = code
+        currentOutputFilename = filename
+        OutputContainer.Size = UDim2.new(1,0,0,200)
+        OutputContainer.Visible = true
+        updateCanvasSize()
+        updateSize()
+    end
+
+    local function HideOutput()
+        OutputContainer.Size = UDim2.new(1,0,0,0)
+        OutputContainer.Visible = false
+        updateSize()
+    end
+
+    local function getObjectFromInput(input)
+        if input:match("^https?://") then
+            local success, res = pcall(function()
+                local scriptContent = game:HttpGet(input)
+                local func = loadstring(scriptContent)
+                if func then
+                    return func()
+                else
+                    error("Failed to loadstring from URL")
+                end
+            end)
+            if success and res and (res:IsA("ScreenGui") or res:IsA("BaseScript")) then
+                return res
+            else
+                return nil, "Failed to load URL or returned invalid object"
+            end
+        end
+
+        local success, res = pcall(function()
+            local func = loadstring(input)
+            if func then
+                return func()
+            else
+                error("Invalid Lua code")
+            end
+        end)
+        if success and res and (res:IsA("ScreenGui") or res:IsA("BaseScript")) then
+            return res
+        end
+
+        success, res = pcall(function()
+            local func = loadstring("return " .. input)
+            if func then
+                return func()
+            else
+                error("Invalid path")
+            end
+        end)
+        if success and res and (res:IsA("ScreenGui") or res:IsA("BaseScript")) then
+            return res
+        end
+
+        return nil, "Could not obtain a ScreenGui or Script from the input"
+    end
+
+    TextButton.MouseButton1Click:Connect(function()
+        local text = TextBox.Text
+        if text == "" then
+            ShowNotification("Please enter a valid input")
+            return
+        end
+
+        HideOutput()
+
+        local obj, err = getObjectFromInput(text)
+        if not obj then
+            ShowNotification("Error: " .. (err or "Invalid input"))
+            return
+        end
+
+        if not isfolder("axomGui2Lua") then
+            makefolder("axomGui2Lua")
+        end
+
+        if obj:IsA("BaseScript") then
+            local source = obj.Source
+            local filename = string.format("axomGui2Lua/%s.lua", obj.Name)
+            ShowOutput(source, filename)
+            writefile(filename, source)
+            ShowNotification("Script source saved to: " .. filename)
+        elseif obj:IsA("ScreenGui") then
+            local filename = string.format("axomGui2Lua/%s.txt", obj.Name)
+            local luaCode = Gui:Save(obj, filename)
+            ShowOutput(luaCode, filename)
+            ShowNotification("GUI saved to: " .. filename)
+            
+            local scriptsExtracted = 0
+            for _, child in ipairs(obj:GetDescendants()) do
+                if child:IsA("BaseScript") then
+                    local source = child.Source
+                    local path = getFullPath(child)
+                    addCapturedItem({
+                        type = "script",
+                        obj = child,
+                        name = child.Name,
+                        code = source,
+                        path = path,
+                        className = child.ClassName,
+                        timestamp = os.time()
+                    })
+                    scriptsExtracted = scriptsExtracted + 1
+                end
+            end
+            if scriptsExtracted > 0 then
+                ShowNotification("Extracted " .. scriptsExtracted .. " scripts from GUI")
+            end
+        else
+            ShowNotification("Unsupported object type")
+        end
+    end)
+
+    local ButtonCorner = Instance.new("UICorner", TextButton)
+    ButtonCorner.CornerRadius = UDim.new(0,8)
+
+    local CopyButtonCorner = Instance.new("UICorner", CopyButton)
+    CopyButtonCorner.CornerRadius = UDim.new(0,8)
+
+    local SaveButtonCorner = Instance.new("UICorner", SaveButton)
+    SaveButtonCorner.CornerRadius = UDim.new(0,8)
+
+    local autoCaptureEnabled = false
+    local captureConnections = {}
+    local capturedItems = {}
+    local itemCache = {}
+    local scanCoroutine
+    local currentFilter = "all"
+
+    local function itemKey(item)
+        if item.type == "gui" then
+            return "gui_" .. tostring(item.obj)
+        else
+            return "script_" .. tostring(item.obj)
+        end
+    end
+
+    function addCapturedItem(item)
+        local key = itemKey(item)
+        if itemCache[key] then return end
+        itemCache[key] = true
+        table.insert(capturedItems, item)
+        updateCaptureList()
+        if item.type == "gui" then
+            ShowNotification("New GUI detected: " .. item.name)
+            task.spawn(function()
+                local gui = item.obj
+                local extracted = 0
+                for _, child in ipairs(gui:GetDescendants()) do
+                    if child:IsA("BaseScript") then
+                        local source = child.Source
+                        local path = getFullPath(child)
+                        addCapturedItem({
+                            type = "script",
+                            obj = child,
+                            name = child.Name,
+                            code = source,
+                            path = path,
+                            className = child.ClassName,
+                            timestamp = os.time()
+                        })
+                        extracted = extracted + 1
+                    end
+                end
+                if extracted > 0 then
+                    ShowNotification("Captured " .. extracted .. " scripts from " .. item.name)
+                end
+            end)
+        elseif item.type == "script" then
+            ShowNotification("New script captured: " .. item.name)
+        end
+    end
+
+    local AutoCaptureButton = Instance.new("TextButton", CanvasGroup)
+    AutoCaptureButton.Size = UDim2.new(1,0,0,35)
+    AutoCaptureButton.Text = "Auto Capture: OFF"
+    AutoCaptureButton.AutoButtonColor = false
+    AutoCaptureButton.TextColor3 = Color3.new(0,0,0)
+    AutoCaptureButton.BackgroundColor3 = ButtonColor
+    AutoCaptureButton.FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.SemiBold)
+    AutoCaptureButton.TextSize = 18
+    AutoCaptureButton.LayoutOrder = 4
+
+    local AutoCaptureCorner = Instance.new("UICorner", AutoCaptureButton)
+    AutoCaptureCorner.CornerRadius = UDim.new(0,8)
+
+    AutoCaptureButton.MouseEnter:Connect(function()
+        TweenService:Create(AutoCaptureButton, TweenInfo.new(.1), {
+            BackgroundColor3 = Color3.new(ButtonColor.R-0.4, ButtonColor.G-0.4, ButtonColor.B-0.4)
+        }):Play()
+    end)
+    AutoCaptureButton.MouseLeave:Connect(function()
+        TweenService:Create(AutoCaptureButton, TweenInfo.new(.1), {
+            BackgroundColor3 = ButtonColor
+        }):Play()
+    end)
+
+    local DescriptionLabel = Instance.new("TextLabel", CanvasGroup)
+    DescriptionLabel.Size = UDim2.new(1,0,0,0)
+    DescriptionLabel.AutomaticSize = Enum.AutomaticSize.Y
+    DescriptionLabel.BackgroundTransparency = 1
+    DescriptionLabel.TextColor3 = Color3.new(1,1,1)
+    DescriptionLabel.TextWrapped = true
+    DescriptionLabel.FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Regular)
+    DescriptionLabel.TextSize = 12
+    DescriptionLabel.Text = "Captures the gui of scripts ran on the client after this toggle is on"
+    DescriptionLabel.LayoutOrder = 5
+
+    local CaptureScrollingFrame = Instance.new("ScrollingFrame", CanvasGroup)
+    CaptureScrollingFrame.Size = UDim2.new(1,0,0,150)
+    CaptureScrollingFrame.BackgroundTransparency = 0.8
+    CaptureScrollingFrame.BackgroundColor3 = Color3.fromRGB(30,30,30)
+    CaptureScrollingFrame.ScrollBarThickness = 8
+    CaptureScrollingFrame.BorderSizePixel = 0
+    CaptureScrollingFrame.CanvasSize = UDim2.new(0,0,0,0)
+    CaptureScrollingFrame.LayoutOrder = 6
+
+    local CaptureListLayout = Instance.new("UIListLayout", CaptureScrollingFrame)
+    CaptureListLayout.FillDirection = Enum.FillDirection.Vertical
+    CaptureListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    CaptureListLayout.Padding = UDim.new(0,2)
+
+    local PlaceholderLabel = Instance.new("TextLabel", CaptureScrollingFrame)
+    PlaceholderLabel.Size = UDim2.new(1,0,0,30)
+    PlaceholderLabel.BackgroundTransparency = 1
+    PlaceholderLabel.TextColor3 = Color3.fromRGB(180,180,180)
+    PlaceholderLabel.FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Regular)
+    PlaceholderLabel.TextSize = 14
+    PlaceholderLabel.Text = "No captures"
+    PlaceholderLabel.TextXAlignment = Enum.TextXAlignment.Center
+    PlaceholderLabel.TextYAlignment = Enum.TextYAlignment.Center
+
+    local StatsFrame = Instance.new("Frame", CanvasGroup)
+    StatsFrame.Size = UDim2.new(1,0,0,20)
+    StatsFrame.BackgroundTransparency = 1
+    StatsFrame.LayoutOrder = 7
+
+    local StatsLabel = Instance.new("TextLabel", StatsFrame)
+    StatsLabel.Size = UDim2.new(0,200,1,0)
+    StatsLabel.BackgroundTransparency = 1
+    StatsLabel.TextColor3 = Color3.fromRGB(200,200,200)
+    StatsLabel.FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Regular)
+    StatsLabel.TextSize = 11
+    StatsLabel.TextXAlignment = Enum.TextXAlignment.Left
+    StatsLabel.Text = "GUIs: 0 | Scripts: 0 (Nested: 0)"
+
+    local FilterFrame = Instance.new("Frame", CanvasGroup)
+    FilterFrame.Size = UDim2.new(1,0,0,22)
+    FilterFrame.BackgroundTransparency = 1
+    FilterFrame.LayoutOrder = 8
+
+    local FilterLayout = Instance.new("UIListLayout", FilterFrame)
+    FilterLayout.FillDirection = Enum.FillDirection.Horizontal
+    FilterLayout.Padding = UDim.new(0,5)
+    FilterLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
+
+    local function createFilterButton(text, filter)
+        local btn = Instance.new("TextButton")
+        btn.Size = UDim2.new(0,60,0,20)
+        btn.Text = text
+        btn.AutoButtonColor = false
+        btn.BackgroundColor3 = filter == "all" and Color3.fromRGB(100,100,100) or Color3.fromRGB(50,50,50)
+        btn.TextColor3 = Color3.new(1,1,1)
+        btn.FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.SemiBold)
+        btn.TextSize = 12
+        btn.Parent = FilterFrame
+        
+        local corner = Instance.new("UICorner", btn)
+        corner.CornerRadius = UDim.new(0,6)
+        
+        btn.MouseButton1Click:Connect(function()
+            currentFilter = filter
+            updateCaptureList()
+            for _, child in ipairs(FilterFrame:GetChildren()) do
+                if child:IsA("TextButton") then
+                    child.BackgroundColor3 = Color3.fromRGB(50,50,50)
+                end
+            end
+            btn.BackgroundColor3 = Color3.fromRGB(100,100,100)
+        end)
+        return btn
+    end
+
+    createFilterButton("All", "all")
+    createFilterButton("GUIs", "gui")
+    createFilterButton("Scripts", "script")
+
+    local function getFilteredItems()
+        if currentFilter == "all" then return capturedItems end
+        local filtered = {}
+        for _, item in ipairs(capturedItems) do
+            if item.type == currentFilter then
+                table.insert(filtered, item)
+            end
+        end
+        return filtered
+    end
+
+    local function updateCaptureList()
+        for _, child in ipairs(CaptureScrollingFrame:GetChildren()) do
+            if child:IsA("TextButton") or child:IsA("Frame") then
+                child:Destroy()
+            end
+        end
+        local filtered = getFilteredItems()
+        PlaceholderLabel.Visible = (#filtered == 0)
+        local totalHeight = 0
+        for i, item in ipairs(filtered) do
+            local entry = Instance.new("TextButton")
+            entry.Size = UDim2.new(1, -10, 0, 28)
+            entry.BackgroundTransparency = 0.7
+            if item.type == "gui" then
+                entry.BackgroundColor3 = Color3.fromRGB(50,80,50)
+                entry.Text = "[📦 GUI] " .. item.name
+            elseif item.type == "script" then
+                entry.BackgroundColor3 = Color3.fromRGB(50,50,80)
+                entry.Text = "[📜 SCRIPT] " .. item.name
+                if item.path then
+                    entry.Text = entry.Text .. " (" .. item.path .. ")"
+                end
+            end
+            entry.TextColor3 = Color3.new(1,1,1)
+            entry.FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Regular)
+            entry.TextSize = 12
+            entry.TextXAlignment = Enum.TextXAlignment.Left
+            entry.Parent = CaptureScrollingFrame
+            entry.LayoutOrder = i
+            local entryCorner = Instance.new("UICorner", entry)
+            entryCorner.CornerRadius = UDim.new(0,6)
+            
+            entry.MouseButton1Click:Connect(function()
+                if item.type == "gui" then
+                    ShowOutput(item.code, string.format("axomGui2Lua/%s.txt", item.name))
+                else
+                    local header = "-- 📜 Script: " .. item.name .. "\n"
+                    header = header .. "-- 📍 Path: " .. (item.path or "unknown") .. "\n"
+                    header = header .. "-- 🔤 Type: " .. (item.className or "Script") .. "\n"
+                    if item.obj then
+                        local success, enabled = pcall(function() return item.obj.Enabled end)
+                        if success then header = header .. "-- Enabled: " .. tostring(enabled) .. "\n" end
+                    end
+                    header = header .. "\n"
+                    ShowOutput(header .. item.code, string.format("axomGui2Lua/%s.lua", item.name))
+                end
+            end)
+            totalHeight = totalHeight + 28 + CaptureListLayout.Padding.Offset
+        end
+        CaptureScrollingFrame.CanvasSize = UDim2.new(0,0,0, math.max(totalHeight, 0))
+        
+        local guiCount, scriptCount, nestedCount = 0, 0, 0
+        for _, item in ipairs(capturedItems) do
+            if item.type == "gui" then
+                guiCount = guiCount + 1
+            elseif item.type == "script" then
+                scriptCount = scriptCount + 1
+                if item.path and item.path:find(".", 1, true) then
+                    nestedCount = nestedCount + 1
+                end
+            end
+        end
+        StatsLabel.Text = "GUIs: " .. guiCount .. " | Scripts: " .. scriptCount .. " (Nested: " .. nestedCount .. ")"
+    end
+
+    local function deepScanGui(gui)
+        if not gui:IsA("ScreenGui") then return end
+        local filename = string.format("axomGui2Lua/%s.txt", gui.Name)
+        local code = Gui:Save(gui, filename)
+        addCapturedItem({
+            type = "gui",
+            obj = gui,
+            name = gui.Name,
+            code = code,
+            timestamp = os.time()
+        })
+    end
+
+    local function scanForNew()
+        local function scanContainer(container)
+            if not container then return end
+            for _, child in ipairs(container:GetChildren()) do
+                if child:IsA("ScreenGui") and child.Name ~= "axomGui2Lua" then
+                    deepScanGui(child)
+                elseif child:IsA("BaseScript") then
+                    local filename = string.format("axomGui2Lua/%s.lua", child.Name)
+                    if not isfolder("axomGui2Lua") then
+                        makefolder("axomGui2Lua")
+                    end
+                    writefile(filename, child.Source)
+                    addCapturedItem({
+                        type = "script",
+                        obj = child,
+                        name = child.Name,
+                        code = child.Source,
+                        path = getFullPath(child),
+                        className = child.ClassName,
+                        timestamp = os.time()
+                    })
+                end
+                if child:IsA("ScreenGui") or child:IsA("PlayerGui") or child:IsA("CoreGui") then
+                    for _, desc in ipairs(child:GetDescendants()) do
+                        if desc:IsA("BaseScript") then
+                            local filename = string.format("axomGui2Lua/%s.lua", desc.Name)
+                            if not isfolder("axomGui2Lua") then
+                                makefolder("axomGui2Lua")
+                            end
+                            writefile(filename, desc.Source)
+                            addCapturedItem({
+                                type = "script",
+                                obj = desc,
+                                name = desc.Name,
+                                code = desc.Source,
+                                path = getFullPath(desc),
+                                className = desc.ClassName,
+                                timestamp = os.time()
+                            })
+                        end
+                    end
+                end
+            end
+        end
+        
+        scanContainer(game.CoreGui)
+        if Players.LocalPlayer then
+            local playerGui = Players.LocalPlayer:FindFirstChild("PlayerGui")
+            scanContainer(playerGui)
+        end
+    end
+
+    local function startAutoCapture()
+        autoCaptureEnabled = true
+        AutoCaptureButton.Text = "Auto Capture: ON"
+        AutoCaptureButton.BackgroundColor3 = Color3.fromRGB(100,200,100)
+        ButtonColor = AutoCaptureButton.BackgroundColor3
+        
+        scanForNew()
+        
+        local function bindToContainer(container)
+            if not container then return end
+            local conn = container.ChildAdded:Connect(function(child)
+                if child:IsA("ScreenGui") and child.Name ~= "axomGui2Lua" then
+                    deepScanGui(child)
+                elseif child:IsA("BaseScript") then
+                    local filename = string.format("axomGui2Lua/%s.lua", child.Name)
+                    if not isfolder("axomGui2Lua") then
+                        makefolder("axomGui2Lua")
+                    end
+                    writefile(filename, child.Source)
+                    addCapturedItem({
+                        type = "script",
+                        obj = child,
+                        name = child.Name,
+                        code = child.Source,
+                        path = getFullPath(child),
+                        className = child.ClassName,
+                        timestamp = os.time()
+                    })
+                end
+            end)
+            table.insert(captureConnections, conn)
+            for _, existing in ipairs(container:GetChildren()) do
+                if existing:IsA("ScreenGui") and existing.Name ~= "axomGui2Lua" then
+                    local guiConn = existing.DescendantAdded:Connect(function(desc)
+                        if desc:IsA("BaseScript") then
+                            local filename = string.format("axomGui2Lua/%s.lua", desc.Name)
+                            if not isfolder("axomGui2Lua") then
+                                makefolder("axomGui2Lua")
+                            end
+                            writefile(filename, desc.Source)
+                            addCapturedItem({
+                                type = "script",
+                                obj = desc,
+                                name = desc.Name,
+                                code = desc.Source,
+                                path = getFullPath(desc),
+                                className = desc.ClassName,
+                                timestamp = os.time()
+                            })
+                        end
+                    end)
+                    table.insert(captureConnections, guiConn)
+                end
+            end
+        end
+        
+        bindToContainer(game.CoreGui)
+        if Players.LocalPlayer then
+            bindToContainer(Players.LocalPlayer:FindFirstChild("PlayerGui"))
+        end
+        
+        scanCoroutine = task.spawn(function()
+            while autoCaptureEnabled do
+                task.wait(1)
+                scanForNew()
             end
         end)
     end
-end)
 
-task.spawn(hookremotes)
+    local function stopAutoCapture()
+        autoCaptureEnabled = false
+        AutoCaptureButton.Text = "Auto Capture: OFF"
+        AutoCaptureButton.BackgroundColor3 = Color3.new(1,1,1)
+        ButtonColor = AutoCaptureButton.BackgroundColor3
+        
+        for _, conn in pairs(captureConnections) do
+            conn:Disconnect()
+        end
+        captureConnections = {}
+        if scanCoroutine then
+            task.cancel(scanCoroutine)
+            scanCoroutine = nil
+        end
+    end
+
+    AutoCaptureButton.MouseButton1Click:Connect(function()
+        if autoCaptureEnabled then
+            stopAutoCapture()
+        else
+            startAutoCapture()
+        end
+    end)
+
+    local function updateSize()
+        local totalHeight = TextLabel.AbsoluteContentSizeY + TextBox.AbsoluteSizeY + TextButton.AbsoluteSizeY + AutoCaptureButton.AbsoluteSizeY + DescriptionLabel.AbsoluteContentSizeY + CaptureScrollingFrame.AbsoluteSizeY + StatsFrame.AbsoluteSizeY + FilterFrame.AbsoluteSizeY + (UIPadding.PaddingTop.Offset * 2) + (UIListLayout.Padding.Offset * 7)
+        if OutputContainer.Visible then
+            totalHeight = totalHeight + OutputContainer.AbsoluteSize.Y + UIListLayout.Padding.Offset
+        end
+        CanvasGroup.Size = UDim2.new(0,350,0,math.max(200, totalHeight + 20))
+        Size = CanvasGroup.Size
+    end
+
+    TextLabel:GetPropertyChangedSignal("AbsoluteContentSizeY"):Connect(updateSize)
+    TextBox:GetPropertyChangedSignal("AbsoluteSizeY"):Connect(updateSize)
+    TextButton:GetPropertyChangedSignal("AbsoluteSizeY"):Connect(updateSize)
+    AutoCaptureButton:GetPropertyChangedSignal("AbsoluteSizeY"):Connect(updateSize)
+    DescriptionLabel:GetPropertyChangedSignal("AbsoluteContentSizeY"):Connect(updateSize)
+    CaptureScrollingFrame:GetPropertyChangedSignal("AbsoluteSizeY"):Connect(updateSize)
+    StatsFrame:GetPropertyChangedSignal("AbsoluteSizeY"):Connect(updateSize)
+    FilterFrame:GetPropertyChangedSignal("AbsoluteSizeY"):Connect(updateSize)
+    OutputContainer:GetPropertyChangedSignal("AbsoluteSize"):Connect(updateSize)
+
+    task.wait()
+    updateSize()
+end
+
+pcall(UI)
