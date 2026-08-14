@@ -1,329 +1,979 @@
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local HttpService = game:GetService("HttpService")
 
-local converter = {}
-
-do
-local propertylist = {
-    "Active", "AnchorPoint", "AutoButtonColor", "AutomaticSize", "BackgroundColor3", "BackgroundTransparency",
-    "BorderColor3", "BorderMode", "BorderSizePixel", "BorderTransparency", "BottomImage", "CanvasPosition",
-    "CanvasSize", "ClearTextOnFocus", "ClipsDescendants", "Color", "CornerRadius", "ElasticBehavior",
-    "FillDirection", "FontFace", "GroupColor3", "GroupTransparency", "HorizontalAlignment", "HorizontalScrollBarInset",
-    "IgnoreGuiInset", "Image", "ImageColor3", "ImageRectOffset", "ImageRectSize", "ImageTransparency",
-    "Interactable", "LayoutOrder", "LineHeight", "MidImage", "Name", "Padding", "PaddingBottom", "PaddingLeft",
-    "PaddingRight", "PaddingTop", "Parent", "PlaceholderColor3", "PlaceholderText", "Position", "RichText",
-    "Rotation", "Scale", "ScaleType", "ScrollBarImageColor3", "ScrollBarImageTransparency", "ScrollBarThickness",
-    "ScrollingDirection", "ScrollingEnabled", "SelectionImageObject", "SelectionOrder", "Size", "SizeConstraint",
-    "SliceCenter", "SliceScale", "SortOrder", "Text", "TextColor3", "TextDirection", "TextFit", "TextScaled",
-    "TextSize", "TextStrokeColor3", "TextStrokeTransparency", "TextTransparency", "TextTruncate", "TextWrapped",
-    "TextXAlignment", "TextYAlignment", "Thickness", "TileSize", "TopImage", "Transparency", "VerticalAlignment",
-    "VerticalScrollBarInset", "VerticalScrollBarPosition", "Visible", "ZIndex", "ZIndexBehavior"
+local Gui = {
+    Properties = {
+        "ImageRectOffset", "SliceCenter", "SliceScale", "TileSize",
+        "ImageTransparency", "ImageRectSize", 
+        "Image", "ImageColor3", "ScaleType", 
+        "BorderColor3", "BorderTransparency", 
+        "BorderMode", "BorderSizePixel",
+        "Name", "Active", "Visible", "ClipsDescendants", 
+        "Rotation", "ZIndex", "LayoutOrder",
+        "Size", "Position", "AutomaticSize", "AnchorPoint",
+        "BackgroundTransparency", "Transparency", 
+        "BackgroundColor3", 
+        "SizeConstraint", "Interactable",
+        "SelectionOrder", "SelectionImageObject",
+        "GroupTransparency", "GroupColor3", 
+        "Text", "TextColor3", "TextSize", "TextXAlignment", 
+        "TextYAlignment", "FontFace", "TextWrapped", "RichText",
+        "AutoButtonColor", "LineHeight", "TextTruncate", "TextFit",
+        "TextTransparency", "PlaceholderText", "PlaceholderColor3",
+        "TextDirection", "ClearTextOnFocus",
+        "PaddingTop", "PaddingLeft", "PaddingRight", "PaddingBottom",
+        "CanvasPosition", "CanvasSize", "ElasticBehavior", 
+        "HorizontalScrollBarInset", "VerticalScrollBarInset",
+        "VerticalScrollBarPosition",
+        "BottomImage", "TopImage", "MidImage",
+        "ScrollBarImageColor3", "ScrollBarImageTransparency",
+        "ScrollBarThickness", "ScrollingDirection", "ScrollingEnabled",
+        "CornerRadius", 
+        "Scale", 
+        "Thickness", "ApplyStrokeMode", "Color",
+        "SortOrder", "VerticalAlignment", "HorizontalAlignment", 
+        "FillDirection", "Padding",
+        "ZIndexBehavior", "IgnoreGuiInset",
+        "Parent",
+        "StrokeColor", "StrokeTransparency", "StrokeThickness",
+        "GradientColor", "GradientTransparency", "GradientRotation",
+        "AspectRatio", "DominantAxis",
+        "MaxSize", "MinSize",
+        "MaxTextSize", "MinTextSize",
+        "AutoLocalize", "RootLocalizationTable",
+    },
+    
+    Serializers = {
+        ColorSequence = function(colorSequence)
+            local keypoints = colorSequence.Keypoints
+            local serializedKeypoints = {}
+            for _, keypoint in ipairs(keypoints) do
+                table.insert(serializedKeypoints, string.format("ColorSequenceKeypoint.new(%s, Color3.fromRGB(%d, %d, %d))",
+                    keypoint.Time,
+                    math.floor(keypoint.Value.R * 255),
+                    math.floor(keypoint.Value.G * 255),
+                    math.floor(keypoint.Value.B * 255)
+                ))
+            end
+            return string.format("ColorSequence.new({%s})", table.concat(serializedKeypoints, ", "))
+        end,
+        
+        NumberSequence = function(numberSequence)
+            local keypoints = numberSequence.Keypoints
+            local serializedKeypoints = {}
+            for _, keypoint in ipairs(keypoints) do
+                table.insert(serializedKeypoints, string.format("NumberSequenceKeypoint.new(%s, %s, %s)",
+                    keypoint.Time,
+                    keypoint.Value,
+                    keypoint.Envelope
+                ))
+            end
+            return string.format("NumberSequence.new({%s})", table.concat(serializedKeypoints, ", "))
+        end,
+        Color3 = function(color)
+            return string.format("Color3.fromRGB(%d, %d, %d)", 
+                math.floor(color.R * 255), 
+                math.floor(color.G * 255), 
+                math.floor(color.B * 255))
+        end,
+        UDim2 = function(udim)
+            return string.format("UDim2.new(%s, %s, %s, %s)", 
+                udim.X.Scale, udim.X.Offset, 
+                udim.Y.Scale, udim.Y.Offset)
+        end,
+        UDim = function(udim)
+            return string.format("UDim.new(%s, %s)", 
+                udim.Scale, udim.Offset)
+        end,
+        Rect = function(rect)
+            return string.format("Rect.new(%s, %s, %s, %s)", 
+                rect.Min.X, rect.Min.Y, rect.Max.X, rect.Max.Y)
+        end,
+        Vector2 = function(vector)
+            return string.format("Vector2.new(%s, %s)", vector.X, vector.Y)
+        end,
+        Enum = function(enum)
+            return tostring(enum)
+        end,
+        EnumItem = function(enumItem) 
+            return tostring(enumItem)
+        end,
+        Font = function(fontFace)
+            return string.format("Font.new(%q, Enum.FontWeight.%s, Enum.FontStyle.%s)", fontFace.Family, fontFace.Weight.Name, fontFace.Style.Name)
+        end,
+        number = function(value)
+            return tostring(value)
+        end,
+        boolean = function(value)
+            return tostring(value)
+        end,
+        string = function(value)
+            return string.format("%q", value)
+        end,
+    },
+    Counters = {}
 }
+
+function Gui:GenerateName(objectType)
+    Gui.Counters[objectType] = (Gui.Counters[objectType] or 0) + 1
+    return string.format("%s_%d", objectType, Gui.Counters[objectType])
+end
+
+function Gui:SerializeObject(object, parentVar)
+    local output = ""
+    local name = Gui:GenerateName(object.ClassName)
     
-    local serializers = {
-        ColorSequence = function(seq)
-            local points = {}
-            for _, kp in ipairs(seq.Keypoints) do
-                table.insert(points, string.format("ColorSequenceKeypoint.new(%s, Color3.fromRGB(%d, %d, %d))",
-                    kp.Time, kp.Value.R*255, kp.Value.G*255, kp.Value.B*255))
+    output = output .. string.format("local %s = Instance.new(%q)\n", name, object.ClassName)
+    output = output .. string.format("%s.Parent = %s\n", name, parentVar or "game.CoreGui")
+    
+    for _, property in next, Gui.Properties do
+        local success, value = pcall(function() return object[property] end)
+        if success and value ~= nil then
+            local serializer = Gui.Serializers[typeof(value)]
+            if serializer then
+                output = output .. string.format("%s.%s = %s\n", name, property, serializer(value))
             end
-            return string.format("ColorSequence.new({%s})", table.concat(points, ", "))
-        end,
-        NumberSequence = function(seq)
-            local points = {}
-            for _, kp in ipairs(seq.Keypoints) do
-                table.insert(points, string.format("NumberSequenceKeypoint.new(%s, %s, %s)", kp.Time, kp.Value, kp.Envelope))
-            end
-            return string.format("NumberSequence.new({%s})", table.concat(points, ", "))
-        end,
-        Color3 = function(c) return string.format("Color3.fromRGB(%d, %d, %d)", c.R*255, c.G*255, c.B*255) end,
-        UDim2 = function(u) return string.format("UDim2.new(%s, %s, %s, %s)", u.X.Scale, u.X.Offset, u.Y.Scale, u.Y.Offset) end,
-        UDim = function(u) return string.format("UDim.new(%s, %s)", u.Scale, u.Offset) end,
-        Rect = function(r) return string.format("Rect.new(%s, %s, %s, %s)", r.Min.X, r.Min.Y, r.Max.X, r.Max.Y) end,
-        Vector2 = function(v) return string.format("Vector2.new(%s, %s)", v.X, v.Y) end,
-        Enum = function(e) return tostring(e) end,
-        EnumItem = function(e) return tostring(e) end,
-        Font = function(f) return string.format("Font.new(%q, Enum.FontWeight.%s, Enum.FontStyle.%s)", f.Family, f.Weight.Name, f.Style.Name) end,
-        number = function(n) return tostring(n) end,
-        boolean = function(b) return tostring(b) end,
-        string = function(s) return string.format("%q", s) end,
-    }
-    
-    local counters = {}
-    
-    function converter:newname(typ)
-        counters[typ] = (counters[typ] or 0) + 1
-        return string.format("%s_%d", typ, counters[typ])
+        end
     end
     
-    function converter:saveobj(obj, parentvar)
-        local code = ""
-        local name = self:newname(obj.ClassName)
+    for _, child in ipairs(object:GetChildren()) do
+        if child:IsA("BaseScript") then
+            local scriptCode = pcall(function() return child.Source end)
+            if scriptCode then
+                output = output .. string.format("-- Embedded Script: %s\n", child:GetFullName())
+                output = output .. scriptCode .. "\n"
+            end
+        else
+            output = output .. Gui:SerializeObject(child, name)
+        end
+    end
+    
+    return output
+end
+
+function Gui:Save(object, filename)
+    local luaCode = Gui:SerializeObject(object)
+    writefile(filename, luaCode)
+    return luaCode
+end
+
+function getFullPath(obj)
+    local path = {}
+    while obj and not obj:IsA("DataModel") do
+        table.insert(path, 1, obj.Name)
+        obj = obj.Parent
+    end
+    return table.concat(path, ".")
+end
+
+function UI()
+    local ButtonColor = Color3.new(1,1,1)
+    if game.CoreGui:FindFirstChild("axomGui2Lua") then
+        game.CoreGui:FindFirstChild("axomGui2Lua"):Destroy()
+    end
+    local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
+    ScreenGui.Name = "axomGui2Lua"
+    
+    local Size = UDim2.new(0,350,0,200)
+    
+    local CanvasGroup = Instance.new("CanvasGroup", ScreenGui)
+    CanvasGroup.Size = Size
+    CanvasGroup.Position = UDim2.new(0.5,0,0.5,0)
+    CanvasGroup.AnchorPoint = Vector2.new(0.5,0.5)
+    CanvasGroup.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+    CanvasGroup.BackgroundTransparency = 0.6
+    CanvasGroup.ClipsDescendants = true
+
+    local dragging, dragInput, dragStart, startPos
+    local function update(input)
+        local delta = input.Position - dragStart
+        CanvasGroup.Position = UDim2.new(
+            startPos.X.Scale, startPos.X.Offset + delta.X,
+            startPos.Y.Scale, startPos.Y.Offset + delta.Y
+            )
+    end
+    CanvasGroup.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging  = true
+            dragStart = input.Position
+            startPos  = CanvasGroup.Position
+            
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
+        end
+    end)
+    CanvasGroup.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+            dragInput = input
+        end
+    end)
+    
+    UserInputService.InputChanged:Connect(function(input)
+        if input == dragInput and dragging then
+            update(input)
+        end
+    end)
+    
+    local UICorner = Instance.new("UICorner", CanvasGroup)
+    UICorner.CornerRadius = UDim.new(0,12)
+    
+    local UIPadding = Instance.new("UIPadding", CanvasGroup)
+    UIPadding.PaddingTop = UDim.new(0,10)
+    UIPadding.PaddingLeft = UDim.new(0,10)
+    UIPadding.PaddingRight = UDim.new(0,10)
+    UIPadding.PaddingBottom = UDim.new(0,10)
+    
+    local UIListLayout = Instance.new("UIListLayout", CanvasGroup)
+    UIListLayout.FillDirection = "Vertical"
+    UIListLayout.SortOrder = "LayoutOrder"
+    UIListLayout.Padding = UDim.new(0,10)
+    
+    local TextLabel = Instance.new("TextLabel", CanvasGroup)
+    TextLabel.Size = UDim2.new(1,0,0,0)
+    TextLabel.TextXAlignment = "Left"
+    TextLabel.AutomaticSize = "Y"
+    TextLabel.FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.SemiBold)
+    TextLabel.BackgroundTransparency = 1
+    TextLabel.TextColor3 = Color3.new(1,1,1)
+    TextLabel.Text = "axomGui2Lua"
+    TextLabel.TextSize = 22
+    TextLabel.TextWrapped = true
+    TextLabel.LayoutOrder = 1
+    
+    local ImageButton = Instance.new("ImageButton", TextLabel)
+    ImageButton.Size = UDim2.new(0,TextLabel.AbsoluteSize.Y,0,TextLabel.AbsoluteSize.Y)
+    ImageButton.Position = UDim2.new(1,0,0,0)
+    ImageButton.AnchorPoint= Vector2.new(1,0)
+    ImageButton.BackgroundTransparency = 1
+    ImageButton.Image = "rbxassetid://10747384394"
+    
+    local Closed = false
+    
+    ImageButton.MouseButton1Click:Connect(function()
+        if not Closed then
+            TweenService:Create(CanvasGroup, TweenInfo.new(0.45, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+                Size = UDim2.new(
+                    0,
+                    TextLabel.TextBounds.X + UIPadding.PaddingLeft.Offset*3 + TextLabel.TextBounds.Y,
+                    0,
+                    TextLabel.TextBounds.Y + UIPadding.PaddingTop.Offset*2
+                )
+            }):Play()
+            TweenService:Create(ImageButton, TweenInfo.new(.25), {Rotation = 45}):Play()
+        else
+            TweenService:Create(CanvasGroup, TweenInfo.new(0.45, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+                Size = Size
+            }):Play()
+            
+            TweenService:Create(ImageButton, TweenInfo.new(.25), {Rotation = 0}):Play()
+        end
+        Closed = not Closed
+    end)
+    
+    local TextBox = Instance.new("TextBox", CanvasGroup)
+    TextBox.Size = UDim2.new(1,0,0,40)
+    TextBox.TextWrapped = true
+    TextBox.TextXAlignment = Enum.TextXAlignment.Left
+    TextBox.FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.SemiBold)
+    TextBox.Text = ""
+    TextBox.TextColor3 = Color3.new(1,1,1)
+    TextBox.PlaceholderText = "Enter path, loadstring, or URL..."
+    TextBox.TextSize = 18
+    TextBox.BackgroundColor3 = Color3.new(1,1,1)
+    TextBox.BackgroundTransparency = 0.95
+    TextBox.ClearTextOnFocus = false
+    TextBox.LayoutOrder = 2
+    
+    local TextBoxCorner = Instance.new("UICorner", TextBox)
+    TextBoxCorner.CornerRadius = UDim.new(0,8)
+    
+    local TextBoxStroke = Instance.new("UIStroke", TextBox)
+    TextBoxStroke.Thickness = 0.6
+    TextBoxStroke.Color = Color3.new(1,1,1)
+    TextBoxStroke.Transparency = 0.8
+    
+    local TextButton = Instance.new("TextButton", CanvasGroup)
+    TextButton.Size = UDim2.new(1,0,0,35)
+    TextButton.Text = "Convert"
+    TextButton.AutoButtonColor = false
+    TextButton.TextColor3 = Color3.new(0,0,0)
+    TextButton.BackgroundColor3 = ButtonColor
+    TextButton.FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.SemiBold)
+    TextButton.TextSize = 18
+    TextButton.LayoutOrder = 3
+    
+    TextButton.MouseEnter:Connect(function()
+        TweenService:Create(TextButton, TweenInfo.new(.1), {
+            BackgroundColor3 = Color3.new(
+                ButtonColor.R-.4,
+                ButtonColor.G-.4,
+                ButtonColor.B-.4
+            )
+        }):Play()
+    end)
+    TextButton.MouseLeave:Connect(function()
+        TweenService:Create(TextButton, TweenInfo.new(.1), {
+            BackgroundColor3 = ButtonColor
+        }):Play()
+    end)
+    
+    local function ShowNotification(message)
+        local notification = Instance.new("TextLabel", ScreenGui)
+        notification.Size = UDim2.new(0,300,0,50)
+        notification.Position = UDim2.new(0.5,0,1,-60)
+        notification.AnchorPoint = Vector2.new(0.5,1)
+        notification.BackgroundColor3 = Color3.fromRGB(50,50,50)
+        notification.BackgroundTransparency = 0.2
+        notification.TextColor3 = Color3.new(1,1,1)
+        notification.Text = message
+        notification.TextSize = 14
+        notification.FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.SemiBold)
+        notification.TextWrapped = true
+        notification.ClipsDescendants = true
         
-        code = code .. string.format("local %s = Instance.new(%q)\n", name, obj.ClassName)
-        code = code .. string.format("%s.Parent = %s\n", name, parentvar or "game.CoreGui")
+        local notifCorner = Instance.new("UICorner", notification)
+        notifCorner.CornerRadius = UDim.new(0,8)
         
-        for _, prop in next, propertylist do
-            local ok, val = pcall(function() return obj[prop] end)
-            if ok and val ~= nil then
-                local ser = serializers[typeof(val)]
-                if ser then
-                    code = code .. string.format("%s.%s = %s\n", name, prop, ser(val))
+        notification.BackgroundTransparency = 0.2
+        TweenService:Create(notification, TweenInfo.new(0.3), {BackgroundTransparency = 0}):Play()
+        
+        task.wait(3)
+        
+        TweenService:Create(notification, TweenInfo.new(0.3), {BackgroundTransparency = 1}):Play()
+        task.wait(0.3)
+        notification:Destroy()
+    end
+
+    local OutputContainer = Instance.new("Frame", CanvasGroup)
+    OutputContainer.Size = UDim2.new(1,0,0,0)
+    OutputContainer.BackgroundTransparency = 1
+    OutputContainer.LayoutOrder = 9
+    OutputContainer.Visible = false
+
+    local OutputLayout = Instance.new("UIListLayout", OutputContainer)
+    OutputLayout.FillDirection = Enum.FillDirection.Vertical
+    OutputLayout.Padding = UDim.new(0,5)
+    OutputLayout.SortOrder = Enum.SortOrder.LayoutOrder
+
+    local CodeScrollingFrame = Instance.new("ScrollingFrame", OutputContainer)
+    CodeScrollingFrame.Size = UDim2.new(1,0,0,150)
+    CodeScrollingFrame.BackgroundTransparency = 0.8
+    CodeScrollingFrame.BackgroundColor3 = Color3.fromRGB(30,30,30)
+    CodeScrollingFrame.ScrollBarThickness = 8
+    CodeScrollingFrame.BorderSizePixel = 0
+    CodeScrollingFrame.CanvasSize = UDim2.new(0,0,0,0)
+    CodeScrollingFrame.LayoutOrder = 1
+
+    local CodeTextBox = Instance.new("TextBox", CodeScrollingFrame)
+    CodeTextBox.Size = UDim2.new(1,0,0,0)
+    CodeTextBox.AutomaticSize = Enum.AutomaticSize.Y
+    CodeTextBox.TextWrapped = true
+    CodeTextBox.TextXAlignment = Enum.TextXAlignment.Left
+    CodeTextBox.TextYAlignment = Enum.TextYAlignment.Top
+    CodeTextBox.BackgroundTransparency = 1
+    CodeTextBox.TextColor3 = Color3.new(1,1,1)
+    CodeTextBox.FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Regular)
+    CodeTextBox.TextSize = 14
+    CodeTextBox.MultiLine = true
+    CodeTextBox.ClearTextOnFocus = false
+    CodeTextBox.Text = ""
+    CodeTextBox.RichText = false
+    CodeTextBox.PlaceholderText = "Output will appear here"
+
+    local function updateCanvasSize()
+        CodeScrollingFrame.CanvasSize = UDim2.new(0,0,0,CodeTextBox.AbsoluteContentSizeY + 10)
+    end
+    CodeTextBox:GetPropertyChangedSignal("Text"):Connect(updateCanvasSize)
+    CodeTextBox:GetPropertyChangedSignal("AbsoluteContentSizeY"):Connect(updateCanvasSize)
+
+    local ButtonRow = Instance.new("Frame", OutputContainer)
+    ButtonRow.Size = UDim2.new(1,0,0,30)
+    ButtonRow.BackgroundTransparency = 1
+    ButtonRow.LayoutOrder = 2
+
+    local rowLayout = Instance.new("UIListLayout", ButtonRow)
+    rowLayout.FillDirection = Enum.FillDirection.Horizontal
+    rowLayout.Padding = UDim.new(0,10)
+    rowLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
+
+    local CopyButton = Instance.new("TextButton", ButtonRow)
+    CopyButton.Size = UDim2.new(0,80,0,30)
+    CopyButton.Text = "Copy"
+    CopyButton.AutoButtonColor = false
+    CopyButton.TextColor3 = Color3.new(1,1,1)
+    CopyButton.BackgroundColor3 = Color3.fromRGB(70,70,70)
+    CopyButton.FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.SemiBold)
+    CopyButton.TextSize = 16
+
+    CopyButton.MouseEnter:Connect(function()
+        TweenService:Create(CopyButton, TweenInfo.new(.1), {BackgroundColor3 = Color3.fromRGB(90,90,90)}):Play()
+    end)
+    CopyButton.MouseLeave:Connect(function()
+        TweenService:Create(CopyButton, TweenInfo.new(.1), {BackgroundColor3 = Color3.fromRGB(70,70,70)}):Play()
+    end)
+
+    local SaveButton = Instance.new("TextButton", ButtonRow)
+    SaveButton.Size = UDim2.new(0,80,0,30)
+    SaveButton.Text = "Save"
+    SaveButton.AutoButtonColor = false
+    SaveButton.TextColor3 = Color3.new(1,1,1)
+    SaveButton.BackgroundColor3 = Color3.fromRGB(70,70,70)
+    SaveButton.FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.SemiBold)
+    SaveButton.TextSize = 16
+
+    SaveButton.MouseEnter:Connect(function()
+        TweenService:Create(SaveButton, TweenInfo.new(.1), {BackgroundColor3 = Color3.fromRGB(90,90,90)}):Play()
+    end)
+    SaveButton.MouseLeave:Connect(function()
+        TweenService:Create(SaveButton, TweenInfo.new(.1), {BackgroundColor3 = Color3.fromRGB(70,70,70)}):Play()
+    end)
+
+    local currentOutputFilename = nil
+
+    CopyButton.MouseButton1Click:Connect(function()
+        if CodeTextBox.Text ~= "" then
+            setclipboard(CodeTextBox.Text)
+            ShowNotification("Copied to clipboard")
+        else
+            ShowNotification("Nothing to copy")
+        end
+    end)
+
+    SaveButton.MouseButton1Click:Connect(function()
+        if currentOutputFilename and CodeTextBox.Text ~= "" then
+            writefile(currentOutputFilename, CodeTextBox.Text)
+            ShowNotification("Saved to: " .. currentOutputFilename)
+        else
+            ShowNotification("No output to save")
+        end
+    end)
+
+    local function ShowOutput(code, filename)
+        CodeTextBox.Text = code
+        currentOutputFilename = filename
+        OutputContainer.Size = UDim2.new(1,0,0,200)
+        OutputContainer.Visible = true
+        updateCanvasSize()
+        updateSize()
+    end
+
+    local function HideOutput()
+        OutputContainer.Size = UDim2.new(1,0,0,0)
+        OutputContainer.Visible = false
+        updateSize()
+    end
+
+    local function getObjectFromInput(input)
+        if input:match("^https?://") then
+            local success, res = pcall(function()
+                local scriptContent = game:HttpGet(input)
+                local func = loadstring(scriptContent)
+                if func then
+                    return func()
+                else
+                    error("Failed to loadstring from URL")
+                end
+            end)
+            if success and res and (res:IsA("ScreenGui") or res:IsA("BaseScript")) then
+                return res
+            else
+                return nil, "Failed to load URL or returned invalid object"
+            end
+        end
+
+        local success, res = pcall(function()
+            local func = loadstring(input)
+            if func then
+                return func()
+            else
+                error("Invalid Lua code")
+            end
+        end)
+        if success and res and (res:IsA("ScreenGui") or res:IsA("BaseScript")) then
+            return res
+        end
+
+        success, res = pcall(function()
+            local func = loadstring("return " .. input)
+            if func then
+                return func()
+            else
+                error("Invalid path")
+            end
+        end)
+        if success and res and (res:IsA("ScreenGui") or res:IsA("BaseScript")) then
+            return res
+        end
+
+        return nil, "Could not obtain a ScreenGui or Script from the input"
+    end
+
+    TextButton.MouseButton1Click:Connect(function()
+        local text = TextBox.Text
+        if text == "" then
+            ShowNotification("Please enter a valid input")
+            return
+        end
+
+        HideOutput()
+
+        local obj, err = getObjectFromInput(text)
+        if not obj then
+            ShowNotification("Error: " .. (err or "Invalid input"))
+            return
+        end
+
+        if obj:IsA("BaseScript") then
+            local source = obj.Source
+            local filename = string.format("axomGui2Lua/%s.lua", obj.Name)
+            ShowOutput(source, filename)
+            writefile(filename, source)
+            ShowNotification("Script source saved to: " .. filename)
+        elseif obj:IsA("ScreenGui") then
+            local filename = string.format("axomGui2Lua/%s.txt", obj.Name)
+            local luaCode = Gui:Save(obj, filename)
+            ShowOutput(luaCode, filename)
+            ShowNotification("GUI saved to: " .. filename)
+            
+            local scriptsExtracted = 0
+            for _, child in ipairs(obj:GetDescendants()) do
+                if child:IsA("BaseScript") then
+                    local source = child.Source
+                    local path = getFullPath(child)
+                    addCapturedItem({
+                        type = "script",
+                        obj = child,
+                        name = child.Name,
+                        code = source,
+                        path = path,
+                        className = child.ClassName,
+                        timestamp = os.time()
+                    })
+                    scriptsExtracted = scriptsExtracted + 1
+                end
+            end
+            if scriptsExtracted > 0 then
+                ShowNotification("Extracted " .. scriptsExtracted .. " scripts from GUI")
+            end
+        else
+            ShowNotification("Unsupported object type")
+        end
+    end)
+
+    local ButtonCorner = Instance.new("UICorner", TextButton)
+    ButtonCorner.CornerRadius = UDim.new(0,8)
+
+    local CopyButtonCorner = Instance.new("UICorner", CopyButton)
+    CopyButtonCorner.CornerRadius = UDim.new(0,8)
+
+    local SaveButtonCorner = Instance.new("UICorner", SaveButton)
+    SaveButtonCorner.CornerRadius = UDim.new(0,8)
+
+    local autoCaptureEnabled = false
+    local captureConnections = {}
+    local capturedItems = {}
+    local itemCache = {}
+    local scanCoroutine
+    local currentFilter = "all"
+
+    local function itemKey(item)
+        if item.type == "gui" then
+            return "gui_" .. tostring(item.obj)
+        else
+            return "script_" .. tostring(item.obj)
+        end
+    end
+
+    function addCapturedItem(item)
+        local key = itemKey(item)
+        if itemCache[key] then return end
+        itemCache[key] = true
+        table.insert(capturedItems, item)
+        updateCaptureList()
+        if item.type == "gui" then
+            ShowNotification("🎯 New GUI detected: " .. item.name .. " - extracting scripts...")
+            task.spawn(function()
+                local gui = item.obj
+                local extracted = 0
+                for _, child in ipairs(gui:GetDescendants()) do
+                    if child:IsA("BaseScript") then
+                        local source = child.Source
+                        local path = getFullPath(child)
+                        addCapturedItem({
+                            type = "script",
+                            obj = child,
+                            name = child.Name,
+                            code = source,
+                            path = path,
+                            className = child.ClassName,
+                            timestamp = os.time()
+                        })
+                        extracted = extracted + 1
+                    end
+                end
+                if extracted > 0 then
+                    ShowNotification("📜 Captured " .. extracted .. " scripts from " .. item.name)
+                end
+            end)
+        elseif item.type == "script" then
+            ShowNotification("📜 New script captured: " .. item.name .. " inside " .. (item.path or "unknown"))
+        end
+    end
+
+    local AutoCaptureButton = Instance.new("TextButton", CanvasGroup)
+    AutoCaptureButton.Size = UDim2.new(1,0,0,35)
+    AutoCaptureButton.Text = "Auto Capture: OFF"
+    AutoCaptureButton.AutoButtonColor = false
+    AutoCaptureButton.TextColor3 = Color3.new(0,0,0)
+    AutoCaptureButton.BackgroundColor3 = ButtonColor
+    AutoCaptureButton.FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.SemiBold)
+    AutoCaptureButton.TextSize = 18
+    AutoCaptureButton.LayoutOrder = 4
+
+    local AutoCaptureCorner = Instance.new("UICorner", AutoCaptureButton)
+    AutoCaptureCorner.CornerRadius = UDim.new(0,8)
+
+    AutoCaptureButton.MouseEnter:Connect(function()
+        TweenService:Create(AutoCaptureButton, TweenInfo.new(.1), {
+            BackgroundColor3 = Color3.new(ButtonColor.R-0.4, ButtonColor.G-0.4, ButtonColor.B-0.4)
+        }):Play()
+    end)
+    AutoCaptureButton.MouseLeave:Connect(function()
+        TweenService:Create(AutoCaptureButton, TweenInfo.new(.1), {
+            BackgroundColor3 = ButtonColor
+        }):Play()
+    end)
+
+    local DescriptionLabel = Instance.new("TextLabel", CanvasGroup)
+    DescriptionLabel.Size = UDim2.new(1,0,0,0)
+    DescriptionLabel.AutomaticSize = Enum.AutomaticSize.Y
+    DescriptionLabel.BackgroundTransparency = 1
+    DescriptionLabel.TextColor3 = Color3.new(1,1,1)
+    DescriptionLabel.TextWrapped = true
+    DescriptionLabel.FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Regular)
+    DescriptionLabel.TextSize = 12
+    DescriptionLabel.Text = "Captures the gui of scripts ran on the client after this toggle is on"
+    DescriptionLabel.LayoutOrder = 5
+
+    local CaptureScrollingFrame = Instance.new("ScrollingFrame", CanvasGroup)
+    CaptureScrollingFrame.Size = UDim2.new(1,0,0,150)
+    CaptureScrollingFrame.BackgroundTransparency = 0.8
+    CaptureScrollingFrame.BackgroundColor3 = Color3.fromRGB(30,30,30)
+    CaptureScrollingFrame.ScrollBarThickness = 8
+    CaptureScrollingFrame.BorderSizePixel = 0
+    CaptureScrollingFrame.CanvasSize = UDim2.new(0,0,0,0)
+    CaptureScrollingFrame.LayoutOrder = 6
+
+    local CaptureListLayout = Instance.new("UIListLayout", CaptureScrollingFrame)
+    CaptureListLayout.FillDirection = Enum.FillDirection.Vertical
+    CaptureListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    CaptureListLayout.Padding = UDim.new(0,2)
+
+    local PlaceholderLabel = Instance.new("TextLabel", CaptureScrollingFrame)
+    PlaceholderLabel.Size = UDim2.new(1,0,0,30)
+    PlaceholderLabel.BackgroundTransparency = 1
+    PlaceholderLabel.TextColor3 = Color3.fromRGB(180,180,180)
+    PlaceholderLabel.FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Regular)
+    PlaceholderLabel.TextSize = 14
+    PlaceholderLabel.Text = "No captures"
+    PlaceholderLabel.TextXAlignment = Enum.TextXAlignment.Center
+    PlaceholderLabel.TextYAlignment = Enum.TextYAlignment.Center
+
+    local StatsFrame = Instance.new("Frame", CanvasGroup)
+    StatsFrame.Size = UDim2.new(1,0,0,20)
+    StatsFrame.BackgroundTransparency = 1
+    StatsFrame.LayoutOrder = 7
+
+    local StatsLabel = Instance.new("TextLabel", StatsFrame)
+    StatsLabel.Size = UDim2.new(0,200,1,0)
+    StatsLabel.BackgroundTransparency = 1
+    StatsLabel.TextColor3 = Color3.fromRGB(200,200,200)
+    StatsLabel.FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Regular)
+    StatsLabel.TextSize = 11
+    StatsLabel.TextXAlignment = Enum.TextXAlignment.Left
+    StatsLabel.Text = "GUIs: 0 | Scripts: 0 (Nested: 0)"
+
+    local FilterFrame = Instance.new("Frame", CanvasGroup)
+    FilterFrame.Size = UDim2.new(1,0,0,22)
+    FilterFrame.BackgroundTransparency = 1
+    FilterFrame.LayoutOrder = 8
+
+    local FilterLayout = Instance.new("UIListLayout", FilterFrame)
+    FilterLayout.FillDirection = Enum.FillDirection.Horizontal
+    FilterLayout.Padding = UDim.new(0,5)
+    FilterLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
+
+    local function createFilterButton(text, filter)
+        local btn = Instance.new("TextButton")
+        btn.Size = UDim2.new(0,60,0,20)
+        btn.Text = text
+        btn.AutoButtonColor = false
+        btn.BackgroundColor3 = filter == "all" and Color3.fromRGB(100,100,100) or Color3.fromRGB(50,50,50)
+        btn.TextColor3 = Color3.new(1,1,1)
+        btn.FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.SemiBold)
+        btn.TextSize = 12
+        btn.Parent = FilterFrame
+        
+        local corner = Instance.new("UICorner", btn)
+        corner.CornerRadius = UDim.new(0,6)
+        
+        btn.MouseButton1Click:Connect(function()
+            currentFilter = filter
+            updateCaptureList()
+            for _, child in ipairs(FilterFrame:GetChildren()) do
+                if child:IsA("TextButton") then
+                    child.BackgroundColor3 = Color3.fromRGB(50,50,50)
+                end
+            end
+            btn.BackgroundColor3 = Color3.fromRGB(100,100,100)
+        end)
+        return btn
+    end
+
+    createFilterButton("All", "all")
+    createFilterButton("GUIs", "gui")
+    createFilterButton("Scripts", "script")
+
+    local function getFilteredItems()
+        if currentFilter == "all" then return capturedItems end
+        local filtered = {}
+        for _, item in ipairs(capturedItems) do
+            if item.type == currentFilter then
+                table.insert(filtered, item)
+            end
+        end
+        return filtered
+    end
+
+    local function updateCaptureList()
+        for _, child in ipairs(CaptureScrollingFrame:GetChildren()) do
+            if child:IsA("TextButton") or child:IsA("Frame") then
+                child:Destroy()
+            end
+        end
+        local filtered = getFilteredItems()
+        PlaceholderLabel.Visible = (#filtered == 0)
+        local totalHeight = 0
+        for i, item in ipairs(filtered) do
+            local entry = Instance.new("TextButton")
+            entry.Size = UDim2.new(1, -10, 0, 28)
+            entry.BackgroundTransparency = 0.7
+            if item.type == "gui" then
+                entry.BackgroundColor3 = Color3.fromRGB(50,80,50)
+                entry.Text = "[📦 GUI] " .. item.name
+            elseif item.type == "script" then
+                entry.BackgroundColor3 = Color3.fromRGB(50,50,80)
+                entry.Text = "[📜 SCRIPT] " .. item.name
+                if item.path then
+                    entry.Text = entry.Text .. " (" .. item.path .. ")"
+                end
+            end
+            entry.TextColor3 = Color3.new(1,1,1)
+            entry.FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Regular)
+            entry.TextSize = 12
+            entry.TextXAlignment = Enum.TextXAlignment.Left
+            entry.Parent = CaptureScrollingFrame
+            entry.LayoutOrder = i
+            local entryCorner = Instance.new("UICorner", entry)
+            entryCorner.CornerRadius = UDim.new(0,6)
+            
+            entry.MouseButton1Click:Connect(function()
+                if item.type == "gui" then
+                    ShowOutput(item.code, string.format("axomGui2Lua/%s.txt", item.name))
+                else
+                    local header = "-- 📜 Script: " .. item.name .. "\n"
+                    header = header .. "-- 📍 Path: " .. (item.path or "unknown") .. "\n"
+                    header = header .. "-- 🔤 Type: " .. (item.className or "Script") .. "\n"
+                    if item.obj then
+                        local success, enabled = pcall(function() return item.obj.Enabled end)
+                        if success then header = header .. "-- Enabled: " .. tostring(enabled) .. "\n" end
+                    end
+                    header = header .. "\n"
+                    ShowOutput(header .. item.code, string.format("axomGui2Lua/%s.lua", item.name))
+                end
+            end)
+            totalHeight = totalHeight + 28 + CaptureListLayout.Padding.Offset
+        end
+        CaptureScrollingFrame.CanvasSize = UDim2.new(0,0,0, math.max(totalHeight, 0))
+        
+        local guiCount, scriptCount, nestedCount = 0, 0, 0
+        for _, item in ipairs(capturedItems) do
+            if item.type == "gui" then
+                guiCount = guiCount + 1
+            elseif item.type == "script" then
+                scriptCount = scriptCount + 1
+                if item.path and item.path:find(".", 1, true) then
+                    nestedCount = nestedCount + 1
+                end
+            end
+        end
+        StatsLabel.Text = "GUIs: " .. guiCount .. " | Scripts: " .. scriptCount .. " (Nested: " .. nestedCount .. ")"
+    end
+
+    local function deepScanGui(gui)
+        if not gui:IsA("ScreenGui") then return end
+        addCapturedItem({
+            type = "gui",
+            obj = gui,
+            name = gui.Name,
+            code = Gui:SerializeObject(gui),
+            timestamp = os.time()
+        })
+    end
+
+    local function scanForNew()
+        local scanned = {}
+        local function scanContainer(container)
+            if not container then return end
+            for _, child in ipairs(container:GetChildren()) do
+                if child:IsA("ScreenGui") and child.Name ~= "axomGui2Lua" then
+                    deepScanGui(child)
+                elseif child:IsA("BaseScript") then
+                    addCapturedItem({
+                        type = "script",
+                        obj = child,
+                        name = child.Name,
+                        code = child.Source,
+                        path = getFullPath(child),
+                        className = child.ClassName,
+                        timestamp = os.time()
+                    })
+                end
+                if child:IsA("ScreenGui") or child:IsA("PlayerGui") or child:IsA("CoreGui") then
+                    for _, desc in ipairs(child:GetDescendants()) do
+                        if desc:IsA("BaseScript") then
+                            addCapturedItem({
+                                type = "script",
+                                obj = desc,
+                                name = desc.Name,
+                                code = desc.Source,
+                                path = getFullPath(desc),
+                                className = desc.ClassName,
+                                timestamp = os.time()
+                            })
+                        end
+                    end
                 end
             end
         end
         
-        for _, child in ipairs(obj:GetChildren()) do
-            code = code .. self:saveobj(child, name)
+        scanContainer(game.CoreGui)
+        if Players.LocalPlayer then
+            local playerGui = Players.LocalPlayer:FindFirstChild("PlayerGui")
+            scanContainer(playerGui)
+        end
+    end
+
+    local function startAutoCapture()
+        autoCaptureEnabled = true
+        AutoCaptureButton.Text = "Auto Capture: ON"
+        AutoCaptureButton.BackgroundColor3 = Color3.fromRGB(100,200,100)
+        ButtonColor = AutoCaptureButton.BackgroundColor3
+        
+        scanForNew()
+        
+        local function bindToContainer(container)
+            if not container then return end
+            local conn = container.ChildAdded:Connect(function(child)
+                if child:IsA("ScreenGui") and child.Name ~= "axomGui2Lua" then
+                    deepScanGui(child)
+                elseif child:IsA("BaseScript") then
+                    addCapturedItem({
+                        type = "script",
+                        obj = child,
+                        name = child.Name,
+                        code = child.Source,
+                        path = getFullPath(child),
+                        className = child.ClassName,
+                        timestamp = os.time()
+                    })
+                end
+            end)
+            table.insert(captureConnections, conn)
+            for _, existing in ipairs(container:GetChildren()) do
+                if existing:IsA("ScreenGui") and existing.Name ~= "axomGui2Lua" then
+                    local guiConn = existing.DescendantAdded:Connect(function(desc)
+                        if desc:IsA("BaseScript") then
+                            addCapturedItem({
+                                type = "script",
+                                obj = desc,
+                                name = desc.Name,
+                                code = desc.Source,
+                                path = getFullPath(desc),
+                                className = desc.ClassName,
+                                timestamp = os.time()
+                            })
+                        end
+                    end)
+                    table.insert(captureConnections, guiConn)
+                end
+            end
         end
         
-        return code
-    end
-    
-    function converter:write(obj, path)
-        local code = self:saveobj(obj)
-        writefile(path, code)
-    end
-end
-
-if game.CoreGui:FindFirstChild("axomGui2Lua") then
-    game.CoreGui:FindFirstChild("axomGui2Lua"):Destroy()
-end
-
-local screengui = Instance.new("ScreenGui", game.CoreGui)
-screengui.Name = "axomGui2Lua"
-
-local uisize = UDim2.new(0, 350, 0, 200)
-
-local main = Instance.new("CanvasGroup", screengui)
-main.Size = uisize
-main.Position = UDim2.new(0.5, 0, 0.5, 0)
-main.AnchorPoint = Vector2.new(0.5, 0.5)
-main.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-main.BackgroundTransparency = 0.6
-main.ClipsDescendants = true
-
-local maincorner = Instance.new("UICorner", main)
-maincorner.CornerRadius = UDim.new(0, 12)
-
-local mainpad = Instance.new("UIPadding", main)
-mainpad.PaddingTop = UDim.new(0, 10)
-mainpad.PaddingLeft = UDim.new(0, 10)
-mainpad.PaddingRight = UDim.new(0, 10)
-mainpad.PaddingBottom = UDim.new(0, 10)
-
-local layout = Instance.new("UIListLayout", main)
-layout.FillDirection = "Vertical"
-layout.SortOrder = "LayoutOrder"
-layout.Padding = UDim.new(0, 10)
-
-local title = Instance.new("TextLabel", main)
-title.Size = UDim2.new(1, 0, 0, 0)
-title.TextXAlignment = "Left"
-title.AutomaticSize = "Y"
-title.FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.SemiBold)
-title.BackgroundTransparency = 1
-title.TextColor3 = Color3.new(1, 1, 1)
-title.Text = "axomGui2Lua"
-title.TextSize = 22
-title.TextWrapped = true
-title.LayoutOrder = 1
-
-local closebtn = Instance.new("ImageButton", title)
-closebtn.Size = UDim2.new(0, title.AbsoluteSize.Y, 0, title.AbsoluteSize.Y)
-closebtn.Position = UDim2.new(1, 0, 0, 0)
-closebtn.AnchorPoint = Vector2.new(1, 0)
-closebtn.BackgroundTransparency = 1
-closebtn.Image = "rbxassetid://10747384394"
-
-local isclosed = false
-
-closebtn.MouseButton1Click:Connect(function()
-    if not isclosed then
-        TweenService:Create(main, TweenInfo.new(0.45, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-            Size = UDim2.new(0, title.TextBounds.X + mainpad.PaddingLeft.Offset * 3 + title.TextBounds.Y, 0, title.TextBounds.Y + mainpad.PaddingTop.Offset * 2)
-        }):Play()
-        TweenService:Create(closebtn, TweenInfo.new(0.25), {Rotation = 45}):Play()
-    else
-        TweenService:Create(main, TweenInfo.new(0.45, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {Size = uisize}):Play()
-        TweenService:Create(closebtn, TweenInfo.new(0.25), {Rotation = 0}):Play()
-    end
-    isclosed = not isclosed
-end)
-
-local inputbox = Instance.new("TextBox", main)
-inputbox.Size = UDim2.new(1, 0, 0, 40)
-inputbox.TextWrapped = true
-inputbox.TextXAlignment = Enum.TextXAlignment.Left
-inputbox.FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.SemiBold)
-inputbox.Text = ""
-inputbox.TextColor3 = Color3.new(1, 1, 1)
-inputbox.PlaceholderText = "Enter path to ScreenGui..."
-inputbox.TextSize = 18
-inputbox.BackgroundColor3 = Color3.new(1, 1, 1)
-inputbox.BackgroundTransparency = 0.95
-inputbox.ClearTextOnFocus = false
-inputbox.LayoutOrder = 2
-
-local inputcorner = Instance.new("UICorner", inputbox)
-inputcorner.CornerRadius = UDim.new(0, 8)
-
-local inputstroke = Instance.new("UIStroke", inputbox)
-inputstroke.Thickness = 0.6
-inputstroke.Color = Color3.new(1, 1, 1)
-inputstroke.Transparency = 0.8
-
-local btncolor = Color3.new(1, 1, 1)
-
-local convertbtn = Instance.new("TextButton", main)
-convertbtn.Size = UDim2.new(1, 0, 0, 35)
-convertbtn.Text = "Convert"
-convertbtn.AutoButtonColor = false
-convertbtn.TextColor3 = Color3.new(0, 0, 0)
-convertbtn.BackgroundColor3 = btncolor
-convertbtn.FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.SemiBold)
-convertbtn.TextSize = 18
-convertbtn.LayoutOrder = 3
-
-convertbtn.MouseEnter:Connect(function()
-    TweenService:Create(convertbtn, TweenInfo.new(0.1), {BackgroundColor3 = Color3.new(btncolor.R - 0.4, btncolor.G - 0.4, btncolor.B - 0.4)}):Play()
-end)
-convertbtn.MouseLeave:Connect(function()
-    TweenService:Create(convertbtn, TweenInfo.new(0.1), {BackgroundColor3 = btncolor}):Play()
-end)
-
-convertbtn.MouseButton1Click:Connect(function()
-    local text = inputbox.Text
-    if text == "" then
-        local notif = Instance.new("TextLabel", screengui)
-        notif.Size = UDim2.new(0, 300, 0, 50)
-        notif.Position = UDim2.new(0.5, 0, 1, -60)
-        notif.AnchorPoint = Vector2.new(0.5, 1)
-        notif.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-        notif.BackgroundTransparency = 0.2
-        notif.TextColor3 = Color3.new(1, 1, 1)
-        notif.Text = "Error,Please enter a valid path that exists. it's not that hard"
-        notif.TextSize = 14
-        notif.FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.SemiBold)
-        notif.TextWrapped = true
-        notif.ClipsDescendants = true
+        bindToContainer(game.CoreGui)
+        if Players.LocalPlayer then
+            bindToContainer(Players.LocalPlayer:FindFirstChild("PlayerGui"))
+        end
         
-        local notifcorner = Instance.new("UICorner", notif)
-        notifcorner.CornerRadius = UDim.new(0, 8)
-        
-        TweenService:Create(notif, TweenInfo.new(0.3), {BackgroundTransparency = 0}):Play()
-        task.wait(3)
-        TweenService:Create(notif, TweenInfo.new(0.3), {BackgroundTransparency = 1}):Play()
-        task.wait(0.3)
-        notif:Destroy()
-        return
-    end
-    
-    local ok, target = pcall(function()
-        return loadstring("return " .. text)()
-    end)
-    
-    if ok and target and target:IsA("ScreenGui") then
-        local path = string.format("axomGui2Lua/%s.lua", target.Name)
-        converter:write(target, path)
-        
-        local notif = Instance.new("TextLabel", screengui)
-        notif.Size = UDim2.new(0, 300, 0, 50)
-        notif.Position = UDim2.new(0.5, 0, 1, -60)
-        notif.AnchorPoint = Vector2.new(0.5, 1)
-        notif.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-        notif.BackgroundTransparency = 0.2
-        notif.TextColor3 = Color3.new(1, 1, 1)
-        notif.Text = "Saved to: " .. path
-        notif.TextSize = 14
-        notif.FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.SemiBold)
-        notif.TextWrapped = true
-        notif.ClipsDescendants = true
-        
-        local notifcorner = Instance.new("UICorner", notif)
-        notifcorner.CornerRadius = UDim.new(0, 8)
-        
-        TweenService:Create(notif, TweenInfo.new(0.3), {BackgroundTransparency = 0}):Play()
-        task.wait(3)
-        TweenService:Create(notif, TweenInfo.new(0.3), {BackgroundTransparency = 1}):Play()
-        task.wait(0.3)
-        notif:Destroy()
-    else
-        local notif = Instance.new("TextLabel", screengui)
-        notif.Size = UDim2.new(0, 300, 0, 50)
-        notif.Position = UDim2.new(0.5, 0, 1, -60)
-        notif.AnchorPoint = Vector2.new(0.5, 1)
-        notif.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-        notif.BackgroundTransparency = 0.2
-        notif.TextColor3 = Color3.new(1, 1, 1)
-        notif.Text = "Error, Invalid ScreenGui path gng just put like CoreGui.ScreenGui but read it through Dex or smth"
-        notif.TextSize = 14
-        notif.FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.SemiBold)
-        notif.TextWrapped = true
-        notif.ClipsDescendants = true
-        
-        local notifcorner = Instance.new("UICorner", notif)
-        notifcorner.CornerRadius = UDim.new(0, 8)
-        
-        TweenService:Create(notif, TweenInfo.new(0.3), {BackgroundTransparency = 0}):Play()
-        task.wait(3)
-        TweenService:Create(notif, TweenInfo.new(0.3), {BackgroundTransparency = 1}):Play()
-        task.wait(0.3)
-        notif:Destroy()
-    end
-end)
-
-local btncorner = Instance.new("UICorner", convertbtn)
-btncorner.CornerRadius = UDim.new(0, 8)
-
-local dragging = false
-local draginput = nil
-local dragstart = nil
-local startpos = nil
-
-local function oninputbegan(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        dragging = true
-        dragstart = input.Position
-        startpos = main.Position
-        
-        input.Changed:Connect(function()
-            if input.UserInputState == Enum.UserInputState.End then
-                dragging = false
+        scanCoroutine = task.spawn(function()
+            while autoCaptureEnabled do
+                task.wait(1)
+                scanForNew()
             end
         end)
     end
-end
 
-local function oninputchanged(input)
-    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-        draginput = input
+    local function stopAutoCapture()
+        autoCaptureEnabled = false
+        AutoCaptureButton.Text = "Auto Capture: OFF"
+        AutoCaptureButton.BackgroundColor3 = Color3.new(1,1,1)
+        ButtonColor = AutoCaptureButton.BackgroundColor3
+        
+        for _, conn in pairs(captureConnections) do
+            conn:Disconnect()
+        end
+        captureConnections = {}
+        if scanCoroutine then
+            task.cancel(scanCoroutine)
+            scanCoroutine = nil
+        end
     end
-end
 
-local function updatepos(input)
-    local delta = input.Position - dragstart
-    main.Position = UDim2.new(startpos.X.Scale, startpos.X.Offset + delta.X, startpos.Y.Scale, startpos.Y.Offset + delta.Y)
-end
+    AutoCaptureButton.MouseButton1Click:Connect(function()
+        if autoCaptureEnabled then
+            stopAutoCapture()
+        else
+            startAutoCapture()
+        end
+    end)
 
-main.InputBegan:Connect(oninputbegan)
-main.InputChanged:Connect(oninputchanged)
-
-UserInputService.InputChanged:Connect(function(input)
-    if input == draginput and dragging then
-        updatepos(input)
+    local function updateSize()
+        local totalHeight = TextLabel.AbsoluteContentSizeY + TextBox.AbsoluteSizeY + TextButton.AbsoluteSizeY + AutoCaptureButton.AbsoluteSizeY + DescriptionLabel.AbsoluteContentSizeY + CaptureScrollingFrame.AbsoluteSizeY + StatsFrame.AbsoluteSizeY + FilterFrame.AbsoluteSizeY + (UIPadding.PaddingTop.Offset * 2) + (UIListLayout.Padding.Offset * 7)
+        if OutputContainer.Visible then
+            totalHeight = totalHeight + OutputContainer.AbsoluteSize.Y + UIListLayout.Padding.Offset
+        end
+        CanvasGroup.Size = UDim2.new(0,350,0,math.max(200, totalHeight + 20))
+        Size = CanvasGroup.Size
     end
-end)
 
-local function updatesize()
-    local total = title.AbsoluteContentSizeY + inputbox.AbsoluteSizeY + convertbtn.AbsoluteSizeY + (mainpad.PaddingTop.Offset * 2) + (layout.Padding.Offset * 2)
-    main.Size = UDim2.new(0, 350, 0, math.max(200, total + 20))
-    uisize = main.Size
+    TextLabel:GetPropertyChangedSignal("AbsoluteContentSizeY"):Connect(updateSize)
+    TextBox:GetPropertyChangedSignal("AbsoluteSizeY"):Connect(updateSize)
+    TextButton:GetPropertyChangedSignal("AbsoluteSizeY"):Connect(updateSize)
+    AutoCaptureButton:GetPropertyChangedSignal("AbsoluteSizeY"):Connect(updateSize)
+    DescriptionLabel:GetPropertyChangedSignal("AbsoluteContentSizeY"):Connect(updateSize)
+    CaptureScrollingFrame:GetPropertyChangedSignal("AbsoluteSizeY"):Connect(updateSize)
+    StatsFrame:GetPropertyChangedSignal("AbsoluteSizeY"):Connect(updateSize)
+    FilterFrame:GetPropertyChangedSignal("AbsoluteSizeY"):Connect(updateSize)
+    OutputContainer:GetPropertyChangedSignal("AbsoluteSize"):Connect(updateSize)
+
+    task.wait()
+    updateSize()
 end
 
-title:GetPropertyChangedSignal("AbsoluteContentSizeY"):Connect(updatesize)
-inputbox:GetPropertyChangedSignal("AbsoluteSizeY"):Connect(updatesize)
-convertbtn:GetPropertyChangedSignal("AbsoluteSizeY"):Connect(updatesize)
-
-task.wait()
-updatesize()
+pcall(UI)
