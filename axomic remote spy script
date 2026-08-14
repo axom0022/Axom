@@ -1,851 +1,211 @@
-local coregui = game:GetService("CoreGui")
-local runservice = game:GetService("RunService")
-local uis = game:GetService("UserInputService")
 local players = game:GetService("Players")
+local coregui = game:GetService("CoreGui")
+local httpservice = game:GetService("HttpService")
 
 local player = players.LocalPlayer
-local playergui = player:WaitForChild("PlayerGui")
 
-local themes = {
-    Dark = {
-        Main = Color3.fromRGB(18, 18, 18),
-        Topbar = Color3.fromRGB(24, 24, 24),
-        Sidebar = Color3.fromRGB(14, 14, 14),
-        Card = Color3.fromRGB(20, 20, 20),
-        Text = Color3.fromRGB(230, 230, 230),
-        Accent = Color3.fromRGB(255, 200, 50),
-        Stroke = Color3.fromRGB(45, 45, 45)
-    },
-    Light = {
-        Main = Color3.fromRGB(240, 240, 240),
-        Topbar = Color3.fromRGB(220, 220, 220),
-        Sidebar = Color3.fromRGB(230, 230, 230),
-        Card = Color3.fromRGB(250, 250, 250),
-        Text = Color3.fromRGB(30, 30, 30),
-        Accent = Color3.fromRGB(0, 120, 215),
-        Stroke = Color3.fromRGB(200, 200, 200)
-    },
-    Blue = {
-        Main = Color3.fromRGB(13, 17, 23),
-        Topbar = Color3.fromRGB(22, 27, 34),
-        Sidebar = Color3.fromRGB(1, 4, 9),
-        Card = Color3.fromRGB(22, 27, 34),
-        Text = Color3.fromRGB(240, 246, 252),
-        Accent = Color3.fromRGB(88, 166, 255),
-        Stroke = Color3.fromRGB(48, 54, 61)
-    }
-}
-
-local currenttheme = themes.Dark
-
-local screen = Instance.new("ScreenGui")
-screen.Name = "axomicsystem"
-screen.ResetOnSpawn = false
-if runservice:IsStudio() then
-    screen.Parent = playergui
-else
-    pcall(function()
-        screen.Parent = coregui
-    end)
-    if screen.Parent ~= coregui then
-        screen.Parent = playergui
-    end
-end
+local screengui = Instance.new("ScreenGui")
+screengui.Name = "AxomicRemoteSpy"
+screengui.ResetOnSpawn = false
+screengui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+screengui.Parent = coregui
 
 local mainframe = Instance.new("Frame")
-mainframe.Name = "mainframe"
-mainframe.Size = UDim2.new(0, 640, 0, 420)
-mainframe.Position = UDim2.new(0.5, -320, 0.5, -210)
-mainframe.BackgroundColor3 = currenttheme.Main
-mainframe.BackgroundTransparency = 0.7
+mainframe.Name = "MainFrame"
+mainframe.Size = UDim2.new(0, 650, 0, 400)
+mainframe.Position = UDim2.new(0.5, -325, 0.5, -200)
+mainframe.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 mainframe.BorderSizePixel = 0
 mainframe.Active = true
 mainframe.Draggable = true
-mainframe.Parent = screen
+mainframe.Parent = screengui
 
-local mainstroke = Instance.new("UIStroke")
-mainstroke.Color = currenttheme.Stroke
-mainstroke.Thickness = 1
-mainstroke.Parent = mainframe
-
-local corner = Instance.new("UICorner")
-corner.CornerRadius = UDim.new(0, 8)
-corner.Parent = mainframe
+local uicorner = Instance.new("UICorner")
+uicorner.CornerRadius = UDim.new(0, 6)
+uicorner.Parent = mainframe
 
 local topbar = Instance.new("Frame")
-topbar.Name = "topbar"
-topbar.Size = UDim2.new(1, 0, 0, 32)
-topbar.BackgroundColor3 = currenttheme.Topbar
-topbar.BackgroundTransparency = 0.7
+topbar.Name = "TopBar"
+topbar.Size = UDim2.new(1, 0, 0, 35)
+topbar.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
 topbar.BorderSizePixel = 0
 topbar.Parent = mainframe
 
 local topbarcorner = Instance.new("UICorner")
-topbarcorner.CornerRadius = UDim.new(0, 8)
+topbarcorner.CornerRadius = UDim.new(0, 6)
 topbarcorner.Parent = topbar
 
-local topbarfix = Instance.new("Frame")
-topbarfix.Size = UDim2.new(1, 0, 0, 8)
-topbarfix.Position = UDim2.new(0, 0, 1, -8)
-topbarfix.BackgroundColor3 = currenttheme.Topbar
-topbarfix.BackgroundTransparency = 0.7
-topbarfix.BorderSizePixel = 0
-topbarfix.Parent = topbar
-
-local iconlabel = Instance.new("TextLabel")
-iconlabel.Size = UDim2.new(0, 30, 1, 0)
-iconlabel.Position = UDim2.new(0, 8, 0, 0)
-iconlabel.BackgroundTransparency = 1
-iconlabel.Text = "⚡"
-iconlabel.TextColor3 = currenttheme.Accent
-iconlabel.TextSize = 14
-iconlabel.Font = Enum.Font.Code
-iconlabel.Parent = topbar
-
 local titlelabel = Instance.new("TextLabel")
-titlelabel.Size = UDim2.new(1, -250, 1, 0)
-titlelabel.Position = UDim2.new(0, 35, 0, 0)
+titlelabel.Size = UDim2.new(1, -120, 1, 0)
+titlelabel.Position = UDim2.new(0, 10, 0, 0)
 titlelabel.BackgroundTransparency = 1
 titlelabel.Text = "Axomic | Remote Spy"
-titlelabel.TextColor3 = currenttheme.Text
-titlelabel.TextSize = 12
-titlelabel.Font = Enum.Font.Code
+titlelabel.TextColor3 = Color3.fromRGB(240, 240, 240)
+titlelabel.TextSize = 14
+titlelabel.Font = Enum.Font.GothamBold
 titlelabel.TextXAlignment = Enum.TextXAlignment.Left
 titlelabel.Parent = topbar
 
-local themebtn = Instance.new("TextButton")
-themebtn.Size = UDim2.new(0, 70, 0, 22)
-themebtn.Position = UDim2.new(1, -110, 0, 5)
-themebtn.BackgroundColor3 = currenttheme.Card
-themebtn.BackgroundTransparency = 0.7
-themebtn.Text = "Theme: Dark"
-themebtn.TextColor3 = currenttheme.Text
-themebtn.TextSize = 10
-themebtn.Font = Enum.Font.Code
-themebtn.Parent = topbar
-
-local themestroke = Instance.new("UIStroke")
-themestroke.Color = currenttheme.Stroke
-themestroke.Thickness = 1
-themestroke.Parent = themebtn
+local themebutton = Instance.new("TextButton")
+themebutton.Size = UDim2.new(0, 70, 0, 25)
+themebutton.Position = UDim2.new(1, -155, 0, 5)
+themebutton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+themebutton.BorderSizePixel = 0
+themebutton.Text = "Theme"
+themebutton.TextColor3 = Color3.fromRGB(220, 220, 220)
+themebutton.TextSize = 12
+themebutton.Font = Enum.Font.Gotham
+themebutton.Parent = topbar
 
 local themecorner = Instance.new("UICorner")
 themecorner.CornerRadius = UDim.new(0, 4)
-themecorner.Parent = themebtn
+themecorner.Parent = themebutton
 
-local closebtn = Instance.new("TextButton")
-closebtn.Size = UDim2.new(0, 32, 0, 32)
-closebtn.Position = UDim2.new(1, -32, 0, 0)
-closebtn.BackgroundTransparency = 1
-closebtn.Text = "✕"
-closebtn.TextColor3 = currenttheme.Text
-closebtn.TextSize = 12
-closebtn.Font = Enum.Font.Code
-closebtn.Parent = topbar
+local closebutton = Instance.new("TextButton")
+closebutton.Size = UDim2.new(0, 25, 0, 25)
+closebutton.Position = UDim2.new(1, -30, 0, 5)
+closebutton.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+closebutton.BorderSizePixel = 0
+closebutton.Text = "X"
+closebutton.TextColor3 = Color3.fromRGB(255, 255, 255)
+closebutton.TextSize = 12
+closebutton.Font = Enum.Font.GothamBold
+closebutton.Parent = topbar
 
-local togglebtn = Instance.new("TextButton")
-togglebtn.Name = "togglebtn"
-togglebtn.Size = UDim2.new(0, 90, 0, 28)
-togglebtn.Position = UDim2.new(0, 10, 0, 10)
-togglebtn.BackgroundColor3 = currenttheme.Card
-togglebtn.BackgroundTransparency = 0.7
-togglebtn.Text = "Toggle"
-togglebtn.TextColor3 = currenttheme.Text
-togglebtn.TextSize = 11
-togglebtn.Font = Enum.Font.Code
-togglebtn.Parent = screen
+local closecorner = Instance.new("UICorner")
+closecorner.CornerRadius = UDim.new(0, 4)
+closecorner.Parent = closebutton
 
-local togglestroke = Instance.new("UIStroke")
-togglestroke.Color = currenttheme.Stroke
-togglestroke.Thickness = 1
-togglestroke.Parent = togglebtn
+local scrollingframe = Instance.new("ScrollingFrame")
+scrollingframe.Size = UDim2.new(1, -220, 1, -45)
+scrollingframe.Position = UDim2.new(0, 5, 0, 40)
+scrollingframe.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+scrollingframe.BorderSizePixel = 0
+scrollingframe.CanvasSize = UDim2.new(0, 0, 0, 0)
+scrollingframe.ScrollBarThickness = 6
+scrollingframe.Parent = mainframe
 
-local togglecorner = Instance.new("UICorner")
-togglecorner.CornerRadius = UDim.new(0, 6)
-togglecorner.Parent = togglebtn
+local sfcorner = Instance.new("UICorner")
+sfcorner.CornerRadius = UDim.new(0, 4)
+sfcorner.Parent = scrollingframe
 
-local filterbar = Instance.new("Frame")
-filterbar.Size = UDim2.new(1, -200, 0, 28)
-filterbar.Position = UDim2.new(0, 192, 0, 40)
-filterbar.BackgroundTransparency = 1
-filterbar.Parent = mainframe
+local uilistlayout = Instance.new("UIListLayout")
+uilistlayout.SortOrder = Enum.SortOrder.LayoutOrder
+uilistlayout.Padding = UDim.new(0, 4)
+uilistlayout.Parent = scrollingframe
 
-local filterlayout = Instance.new("UIListLayout")
-filterlayout.FillDirection = Enum.FillDirection.Horizontal
-filterlayout.SortOrder = Enum.SortOrder.LayoutOrder
-filterlayout.Padding = UDim.new(0, 6)
-filterlayout.Parent = filterbar
+local detailsbox = Instance.new("TextBox")
+detailsbox.Size = UDim2.new(0, 210, 1, -45)
+detailsbox.Position = UDim2.new(1, -215, 0, 40)
+detailsbox.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+detailsbox.BorderSizePixel = 0
+detailsbox.MultiLine = true
+detailsbox.ClearTextOnFocus = false
+detailsbox.TextEditable = false
+detailsbox.Text = "Select a remote log to inspect arguments."
+detailsbox.TextColor3 = Color3.fromRGB(200, 200, 200)
+detailsbox.TextSize = 12
+detailsbox.Font = Enum.Font.Code
+detailsbox.TextXAlignment = Enum.TextXAlignment.Left
+detailsbox.TextYAlignment = Enum.TextYAlignment.Top
+detailsbox.Parent = mainframe
 
-local function makefilterbtn(text)
-    local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(0, 70, 1, 0)
-    btn.BackgroundColor3 = currenttheme.Card
-    btn.BackgroundTransparency = 0.7
-    btn.Text = text
-    btn.TextColor3 = currenttheme.Text
-    btn.TextSize = 11
-    btn.Font = Enum.Font.Code
-    btn.Parent = filterbar
+local detailscorner = Instance.new("UICorner")
+detailscorner.CornerRadius = UDim.new(0, 4)
+detailscorner.Parent = detailsbox
 
-    local stroke = Instance.new("UIStroke")
-    stroke.Color = currenttheme.Stroke
-    stroke.Thickness = 1
-    stroke.Parent = btn
+local themes = {
+	{
+		main = Color3.fromRGB(25, 25, 25),
+		top = Color3.fromRGB(35, 35, 35),
+		container = Color3.fromRGB(20, 20, 20),
+		text = Color3.fromRGB(240, 240, 240)
+	},
+	{
+		main = Color3.fromRGB(240, 240, 240),
+		top = Color3.fromRGB(220, 220, 220),
+		container = Color3.fromRGB(255, 255, 255),
+		text = Color3.fromRGB(20, 20, 20)
+	},
+	{
+		main = Color3.fromRGB(15, 25, 45),
+		top = Color3.fromRGB(25, 40, 70),
+		container = Color3.fromRGB(10, 18, 30),
+		text = Color3.fromRGB(200, 220, 255)
+	}
+}
 
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 4)
-    corner.Parent = btn
-    return btn
+local currentthemeindex = 1
+
+local function applytheme(theme)
+	mainframe.BackgroundColor3 = theme.main
+	topbar.BackgroundColor3 = theme.top
+	scrollingframe.BackgroundColor3 = theme.container
+	detailsbox.BackgroundColor3 = theme.container
+	titlelabel.TextColor3 = theme.text
+	detailsbox.TextColor3 = theme.text
 end
 
-local ongoingbtn = makefilterbtn("Ongoing")
-local incomingbtn = makefilterbtn("Incoming")
-local allbtn = makefilterbtn("ALL")
+themebutton.MouseButton1Click:Connect(function()
+	currentthemeindex = currentthemeindex % #themes + 1
+	applytheme(themes[currentthemeindex])
+end)
 
-local sidebar = Instance.new("ScrollingFrame")
-sidebar.Name = "sidebar"
-sidebar.Size = UDim2.new(0, 180, 1, -80)
-sidebar.Position = UDim2.new(0, 8, 0, 72)
-sidebar.BackgroundColor3 = currenttheme.Sidebar
-sidebar.BackgroundTransparency = 0.7
-sidebar.BorderSizePixel = 0
-sidebar.CanvasSize = UDim2.new(0, 0, 0, 0)
-sidebar.ScrollBarThickness = 2
-sidebar.ScrollBarImageColor3 = currenttheme.Stroke
-sidebar.Parent = mainframe
+closebutton.MouseButton1Click:Connect(function()
+	screengui:Destroy()
+end)
 
-local sidebarstroke = Instance.new("UIStroke")
-sidebarstroke.Color = currenttheme.Stroke
-sidebarstroke.Thickness = 1
-sidebarstroke.Parent = sidebar
-
-local sidebarcorner = Instance.new("UICorner")
-sidebarcorner.CornerRadius = UDim.new(0, 6)
-sidebarcorner.Parent = sidebar
-
-local sidelayout = Instance.new("UIListLayout")
-sidelayout.SortOrder = Enum.SortOrder.LayoutOrder
-sidelayout.Padding = UDim.new(0, 4)
-sidelayout.Parent = sidebar
-
-local mainscroll = Instance.new("ScrollingFrame")
-mainscroll.Name = "mainscroll"
-mainscroll.Size = UDim2.new(1, -200, 1, -80)
-mainscroll.Position = UDim2.new(0, 192, 0, 72)
-mainscroll.BackgroundTransparency = 1
-mainscroll.BorderSizePixel = 0
-mainscroll.CanvasSize = UDim2.new(0, 0, 0, 0)
-mainscroll.ScrollBarThickness = 3
-mainscroll.ScrollBarImageColor3 = currenttheme.Stroke
-mainscroll.Parent = mainframe
-
-local mainlayout = Instance.new("UIListLayout")
-mainlayout.SortOrder = Enum.SortOrder.LayoutOrder
-mainlayout.VerticalAlignment = Enum.VerticalAlignment.Bottom
-mainlayout.Padding = UDim.new(0, 6)
-mainlayout.Parent = mainscroll
-
-local detailview = Instance.new("Frame")
-detailview.Name = "detailview"
-detailview.Size = UDim2.new(1, -200, 1, -80)
-detailview.Position = UDim2.new(0, 192, 0, 72)
-detailview.BackgroundColor3 = currenttheme.Sidebar
-detailview.BackgroundTransparency = 0.7
-detailview.BorderSizePixel = 0
-detailview.Visible = false
-detailview.Parent = mainframe
-
-local detailviewstroke = Instance.new("UIStroke")
-detailviewstroke.Color = currenttheme.Stroke
-detailviewstroke.Thickness = 1
-detailviewstroke.Parent = detailview
-
-local detailviewcorner = Instance.new("UICorner")
-detailviewcorner.CornerRadius = UDim.new(0, 6)
-detailviewcorner.Parent = detailview
-
-local tabbar = Instance.new("Frame")
-tabbar.Size = UDim2.new(1, -16, 0, 28)
-tabbar.Position = UDim2.new(0, 8, 0, 8)
-tabbar.BackgroundTransparency = 1
-tabbar.Parent = detailview
-
-local tablayout = Instance.new("UIListLayout")
-tablayout.FillDirection = Enum.FillDirection.Horizontal
-tablayout.SortOrder = Enum.SortOrder.LayoutOrder
-tablayout.Padding = UDim.new(0, 6)
-tablayout.Parent = tabbar
-
-local argstabbtn = Instance.new("TextButton")
-argstabbtn.Size = UDim2.new(0, 85, 1, 0)
-argstabbtn.BackgroundColor3 = currenttheme.Topbar
-argstabbtn.BackgroundTransparency = 0.7
-argstabbtn.Text = "Arguments"
-argstabbtn.TextColor3 = currenttheme.Text
-argstabbtn.TextSize = 11
-argstabbtn.Font = Enum.Font.Code
-argstabbtn.Parent = tabbar
-
-local argstabstroke = Instance.new("UIStroke")
-argstabstroke.Color = currenttheme.Stroke
-argstabstroke.Thickness = 1
-argstabstroke.Parent = argstabbtn
-
-local argstabcorner = Instance.new("UICorner")
-argstabcorner.CornerRadius = UDim.new(0, 4)
-argstabcorner.Parent = argstabbtn
-
-local codetabbtn = Instance.new("TextButton")
-codetabbtn.Size = UDim2.new(0, 65, 1, 0)
-codetabbtn.BackgroundColor3 = currenttheme.Card
-codetabbtn.BackgroundTransparency = 0.7
-codetabbtn.Text = "Code"
-codetabbtn.TextColor3 = currenttheme.Text
-codetabbtn.TextSize = 11
-codetabbtn.Font = Enum.Font.Code
-codetabbtn.Parent = tabbar
-
-local codetabstroke = Instance.new("UIStroke")
-codetabstroke.Color = currenttheme.Stroke
-codetabstroke.Thickness = 1
-codetabstroke.Parent = codetabbtn
-
-local codetabcorner = Instance.new("UICorner")
-codetabcorner.CornerRadius = UDim.new(0, 4)
-codetabcorner.Parent = codetabbtn
-
-local infotabbtn = Instance.new("TextButton")
-infotabbtn.Size = UDim2.new(0, 95, 1, 0)
-infotabbtn.BackgroundColor3 = currenttheme.Card
-infotabbtn.BackgroundTransparency = 0.7
-infotabbtn.Text = "Function Info"
-infotabbtn.TextColor3 = currenttheme.Text
-infotabbtn.TextSize = 11
-infotabbtn.Font = Enum.Font.Code
-infotabbtn.Parent = tabbar
-
-local infotabstroke = Instance.new("UIStroke")
-infotabstroke.Color = currenttheme.Stroke
-infotabstroke.Thickness = 1
-infotabstroke.Parent = infotabbtn
-
-local infotabcorner = Instance.new("UICorner")
-infotabcorner.CornerRadius = UDim.new(0, 4)
-infotabcorner.Parent = infotabbtn
-
-local itemscroll = Instance.new("ScrollingFrame")
-itemscroll.Name = "itemscroll"
-itemscroll.Size = UDim2.new(1, -16, 1, -85)
-itemscroll.Position = UDim2.new(0, 8, 0, 44)
-itemscroll.BackgroundColor3 = currenttheme.Main
-itemscroll.BackgroundTransparency = 0.7
-itemscroll.BorderSizePixel = 0
-itemscroll.CanvasSize = UDim2.new(0, 0, 0, 0)
-itemscroll.ScrollBarThickness = 3
-itemscroll.ScrollBarImageColor3 = currenttheme.Stroke
-itemscroll.Parent = detailview
-
-local itemscrollstroke = Instance.new("UIStroke")
-itemscrollstroke.Color = currenttheme.Stroke
-itemscrollstroke.Thickness = 1
-itemscrollstroke.Parent = itemscroll
-
-local itemscrollcorner = Instance.new("UICorner")
-itemscrollcorner.CornerRadius = UDim.new(0, 4)
-itemscrollcorner.Parent = itemscroll
-
-local itemlayout = Instance.new("UIListLayout")
-itemlayout.SortOrder = Enum.SortOrder.LayoutOrder
-itemlayout.Padding = UDim.new(0, 4)
-itemlayout.Parent = itemscroll
-
-local actionbar = Instance.new("Frame")
-actionbar.Size = UDim2.new(1, -16, 0, 28)
-actionbar.Position = UDim2.new(0, 8, 1, -34)
-actionbar.BackgroundTransparency = 1
-actionbar.Parent = detailview
-
-local actionlayout = Instance.new("UIListLayout")
-actionlayout.FillDirection = Enum.FillDirection.Horizontal
-actionlayout.SortOrder = Enum.SortOrder.LayoutOrder
-actionlayout.Padding = UDim.new(0, 6)
-actionlayout.Parent = actionbar
-
-local firecontrolbtn = Instance.new("TextButton")
-firecontrolbtn.Size = UDim2.new(0, 70, 1, 0)
-firecontrolbtn.BackgroundColor3 = currenttheme.Card
-firecontrolbtn.BackgroundTransparency = 0.7
-firecontrolbtn.Text = "Fire"
-firecontrolbtn.TextColor3 = currenttheme.Text
-firecontrolbtn.TextSize = 11
-firecontrolbtn.Font = Enum.Font.Code
-firecontrolbtn.Parent = actionbar
-
-local firestroke = Instance.new("UIStroke")
-firestroke.Color = currenttheme.Stroke
-firestroke.Thickness = 1
-firestroke.Parent = firecontrolbtn
-
-local firecorner = Instance.new("UICorner")
-firecorner.CornerRadius = UDim.new(0, 4)
-firecorner.Parent = firecontrolbtn
-
-local copycontrolbtn = Instance.new("TextButton")
-copycontrolbtn.Size = UDim2.new(0, 70, 1, 0)
-copycontrolbtn.BackgroundColor3 = currenttheme.Card
-copycontrolbtn.BackgroundTransparency = 0.7
-copycontrolbtn.Text = "Copy"
-copycontrolbtn.TextColor3 = currenttheme.Text
-copycontrolbtn.TextSize = 11
-copycontrolbtn.Font = Enum.Font.Code
-copycontrolbtn.Parent = actionbar
-
-local copystroke = Instance.new("UIStroke")
-copystroke.Color = currenttheme.Stroke
-copystroke.Thickness = 1
-copystroke.Parent = copycontrolbtn
-
-local copycorner = Instance.new("UICorner")
-copycorner.CornerRadius = UDim.new(0, 4)
-copycorner.Parent = copycontrolbtn
-
-local backcontrolbtn = Instance.new("TextButton")
-backcontrolbtn.Size = UDim2.new(0, 70, 1, 0)
-backcontrolbtn.BackgroundColor3 = currenttheme.Card
-backcontrolbtn.BackgroundTransparency = 0.7
-backcontrolbtn.Text = "Back"
-backcontrolbtn.TextColor3 = currenttheme.Text
-backcontrolbtn.TextSize = 11
-backcontrolbtn.Font = Enum.Font.Code
-backcontrolbtn.Parent = actionbar
-
-local backstroke = Instance.new("UIStroke")
-backstroke.Color = currenttheme.Stroke
-backstroke.Thickness = 1
-backstroke.Parent = backcontrolbtn
-
-local backcorner = Instance.new("UICorner")
-backcorner.CornerRadius = UDim.new(0, 4)
-backcorner.Parent = backcontrolbtn
-
-local activeobject = nil
-local activeargs = {}
-local activetab = "args"
-local currentfilter = "ALL"
-local allcards = {}
-
-local function applytheme(t)
-    currenttheme = t
-    mainframe.BackgroundColor3 = t.Main
-    mainstroke.Color = t.Stroke
-    topbar.BackgroundColor3 = t.Topbar
-    topbarfix.BackgroundColor3 = t.Topbar
-    iconlabel.TextColor3 = t.Accent
-    titlelabel.TextColor3 = t.Text
-    themebtn.BackgroundColor3 = t.Card
-    themebtn.TextColor3 = t.Text
-    themestroke.Color = t.Stroke
-    togglebtn.BackgroundColor3 = t.Card
-    togglebtn.TextColor3 = t.Text
-    togglestroke.Color = t.Stroke
-    sidebar.BackgroundColor3 = t.Sidebar
-    sidebar.ScrollBarImageColor3 = t.Stroke
-    sidebarstroke.Color = t.Stroke
-    detailview.BackgroundColor3 = t.Sidebar
-    detailviewstroke.Color = t.Stroke
-    itemscroll.BackgroundColor3 = t.Main
-    itemscroll.ScrollBarImageColor3 = t.Stroke
-    itemscrollstroke.Color = t.Stroke
-    for _, btn in ipairs({ongoingbtn, incomingbtn, allbtn, argstabbtn, codetabbtn, infotabbtn, firecontrolbtn, copycontrolbtn, backcontrolbtn}) do
-        btn.BackgroundColor3 = t.Card
-        btn.TextColor3 = t.Text
-        local s = btn:FindFirstChildOfClass("UIStroke")
-        if s then s.Color = t.Stroke end
-    end
+local function serializeargs(args)
+	local success, result = pcall(function()
+		return httpservice:JSONEncode(args)
+	end)
+	if success then
+		return result
+	else
+		local str = ""
+		for i, v in ipairs(args) do
+			str = str .. "[" .. tostring(i) .. "] = " .. tostring(v) .. "\n"
+		end
+		return str
+	end
 end
 
-themebtn.MouseButton1Click:Connect(function()
-    if currenttheme == themes.Dark then
-        applytheme(themes.Light)
-        themebtn.Text = "Theme: Light"
-    elseif currenttheme == themes.Light then
-        applytheme(themes.Blue)
-        themebtn.Text = "Theme: Blue"
-    else
-        applytheme(themes.Dark)
-        themebtn.Text = "Theme: Dark"
-    end
-end)
+local function addlog(remotetype, remote, args)
+	local entrybutton = Instance.new("TextButton")
+	entrybutton.Size = UDim2.new(1, 0, 0, 25)
+	entrybutton.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+	entrybutton.BorderSizePixel = 0
+	entrybutton.Text = " [" .. remotetype .. "] " .. remote.Name
+	entrybutton.TextColor3 = Color3.fromRGB(220, 220, 220)
+	entrybutton.TextSize = 11
+	entrybutton.Font = Enum.Font.Code
+	entrybutton.TextXAlignment = Enum.TextXAlignment.Left
+	entrybutton.Parent = scrollingframe
 
-local function gettype(val)
-    local t = typeof(val)
-    if t == "Instance" then
-        return "Instance"
-    elseif t == "Color3" then
-        return "Color3"
-    elseif t == "BrickColor" then
-        return "BrickColor"
-    elseif t == "CFrame" then
-        return "CFrame"
-    elseif t == "Vector3" then
-        return "Vector3"
-    elseif t == "number" then
-        return "number"
-    elseif t == "string" then
-        return "string"
-    elseif t == "boolean" then
-        return "boolean"
-    else
-        return t
-    end
+	local entrycorner = Instance.new("UICorner")
+	entrycorner.CornerRadius = UDim.new(0, 3)
+	entrycorner.Parent = entrybutton
+
+	entrybutton.MouseButton1Click:Connect(function()
+		detailsbox.Text = "Remote: " .. remote:GetFullName() .. "\nType: " .. remotetype .. "\n\nArguments:\n" .. serializeargs(args)
+	end)
+
+	local scrollingcanvassize = uilistlayout.AbsoluteContentSize.Y
+	scrollingframe.CanvasSize = UDim2.new(0, 0, 0, scrollingcanvassize)
 end
 
-local function clearitems()
-    for _, child in ipairs(itemscroll:GetChildren()) do
-        if child:IsA("Frame") then
-            child:Destroy()
-        end
-    end
-end
-
-local function renderargs()
-    clearitems()
-    for idx, val in ipairs(activeargs) do
-        local row = Instance.new("Frame")
-        row.Size = UDim2.new(1, 0, 0, 26)
-        row.BackgroundColor3 = currenttheme.Card
-        row.BackgroundTransparency = 0.7
-        row.BorderSizePixel = 0
-        row.Parent = itemscroll
-
-        local rowstroke = Instance.new("UIStroke")
-        rowstroke.Color = currenttheme.Stroke
-        rowstroke.Thickness = 1
-        rowstroke.Parent = row
-
-        local rowcorner = Instance.new("UICorner")
-        rowcorner.CornerRadius = UDim.new(0, 3)
-        rowcorner.Parent = row
-
-        local idxlabel = Instance.new("TextLabel")
-        idxlabel.Size = UDim2.new(0, 30, 1, 0)
-        idxlabel.Position = UDim2.new(0, 6, 0, 0)
-        idxlabel.BackgroundTransparency = 1
-        idxlabel.Text = tostring(idx)
-        idxlabel.TextColor3 = currenttheme.Text
-        idxlabel.TextSize = 11
-        idxlabel.Font = Enum.Font.Code
-        idxlabel.TextXAlignment = Enum.TextXAlignment.Left
-        idxlabel.Parent = row
-
-        local vallabel = Instance.new("TextLabel")
-        vallabel.Size = UDim2.new(1, -110, 1, 0)
-        vallabel.Position = UDim2.new(0, 35, 0, 0)
-        vallabel.BackgroundTransparency = 1
-        vallabel.Text = tostring(val)
-        vallabel.TextColor3 = currenttheme.Accent
-        vallabel.TextSize = 11
-        vallabel.Font = Enum.Font.Code
-        vallabel.TextXAlignment = Enum.TextXAlignment.Left
-        vallabel.Parent = row
-
-        local typelabel = Instance.new("TextLabel")
-        typelabel.Size = UDim2.new(0, 70, 1, 0)
-        typelabel.Position = UDim2.new(1, -75, 0, 0)
-        typelabel.BackgroundTransparency = 1
-        typelabel.Text = gettype(val)
-        typelabel.TextColor3 = currenttheme.Text
-        typelabel.TextSize = 11
-        typelabel.Font = Enum.Font.Code
-        typelabel.TextXAlignment = Enum.TextXAlignment.Right
-        typelabel.Parent = row
-    end
-    itemscroll.CanvasSize = UDim2.new(0, 0, 0, itemlayout.AbsoluteContentSize.Y)
-end
-
-local function rendercode()
-    clearitems()
-    local row = Instance.new("Frame")
-    row.Size = UDim2.new(1, 0, 0, 120)
-    row.BackgroundColor3 = currenttheme.Card
-    row.BackgroundTransparency = 0.7
-    row.BorderSizePixel = 0
-    row.Parent = itemscroll
-
-    local codelabel = Instance.new("TextLabel")
-    codelabel.Size = UDim2.new(1, -12, 1, 0)
-    codelabel.Position = UDim2.new(0, 6, 0, 0)
-    codelabel.BackgroundTransparency = 1
-    codelabel.Text = "local remote = " .. tostring(activeobject and activeobject:GetFullName() or "nil") .. "\nremote:FireServer()"
-    codelabel.TextColor3 = currenttheme.Text
-    codelabel.TextSize = 11
-    codelabel.Font = Enum.Font.Code
-    codelabel.TextXAlignment = Enum.TextXAlignment.Left
-    codelabel.TextYAlignment = Enum.TextYAlignment.Top
-    codelabel.Parent = row
-    itemscroll.CanvasSize = UDim2.new(0, 0, 0, itemlayout.AbsoluteContentSize.Y)
-end
-
-local function renderinfo()
-    clearitems()
-    local row = Instance.new("Frame")
-    row.Size = UDim2.new(1, 0, 0, 100)
-    row.BackgroundColor3 = currenttheme.Card
-    row.BackgroundTransparency = 0.7
-    row.BorderSizePixel = 0
-    row.Parent = itemscroll
-
-    local infolabel = Instance.new("TextLabel")
-    infolabel.Size = UDim2.new(1, -12, 1, 0)
-    infolabel.Position = UDim2.new(0, 6, 0, 0)
-    infolabel.BackgroundTransparency = 1
-    infolabel.Text = "Name: " .. tostring(activeobject and activeobject.Name or "") .. "\nClass: " .. tostring(activeobject and activeobject.ClassName or "") .. "\nPath: " .. tostring(activeobject and activeobject:GetFullName() or "")
-    infolabel.TextColor3 = currenttheme.Text
-    infolabel.TextSize = 11
-    infolabel.Font = Enum.Font.Code
-    infolabel.TextXAlignment = Enum.TextXAlignment.Left
-    infolabel.TextYAlignment = Enum.TextYAlignment.Top
-    infolabel.Parent = row
-    itemscroll.CanvasSize = UDim2.new(0, 0, 0, itemlayout.AbsoluteContentSize.Y)
-end
-
-local function updatefilter()
-    for _, item in ipairs(allcards) do
-        if currentfilter == "ALL" then
-            item.Card.Visible = true
-            item.SideBtn.Visible = true
-        elseif currentfilter == "Ongoing" and item.Type == "Outgoing" then
-            item.Card.Visible = true
-            item.SideBtn.Visible = true
-        elseif currentfilter == "Incoming" and item.Type == "Incoming" then
-            item.Card.Visible = true
-            item.SideBtn.Visible = true
-        else
-            item.Card.Visible = false
-            item.SideBtn.Visible = false
-        end
-    end
-    mainscroll.CanvasSize = UDim2.new(0, 0, 0, mainlayout.AbsoluteContentSize.Y)
-    sidebar.CanvasSize = UDim2.new(0, 0, 0, sidelayout.AbsoluteContentSize.Y)
-end
-
-ongoingbtn.MouseButton1Click:Connect(function()
-    currentfilter = "Ongoing"
-    updatefilter()
+local oldnamecall
+oldnamecall = hookmetamethod(game, "__namecall", function(self, ...)
+	local method = getnamecallmethod()
+	local args = {...}
+	
+	if not checkcaller() then
+		if self:IsA("RemoteEvent") and method == "FireServer" then
+			addlog("Event", self, args)
+		elseif self:IsA("RemoteFunction") and method == "InvokeServer" then
+			addlog("Function", self, args)
+		end
+	end
+	
+	return oldnamecall(self, ...)
 end)
-
-incomingbtn.MouseButton1Click:Connect(function()
-    currentfilter = "Incoming"
-    updatefilter()
-end)
-
-allbtn.MouseButton1Click:Connect(function()
-    currentfilter = "ALL"
-    updatefilter()
-end)
-
-local function addlog(remotetype, remotename, remoteobj, args)
-    local card = Instance.new("Frame")
-    card.Size = UDim2.new(1, -12, 0, 65)
-    card.BackgroundColor3 = currenttheme.Card
-    card.BackgroundTransparency = 0.7
-    card.BorderSizePixel = 0
-    card.Parent = mainscroll
-
-    local cardstroke = Instance.new("UIStroke")
-    cardstroke.Color = currenttheme.Stroke
-    cardstroke.Thickness = 1
-    cardstroke.Parent = card
-
-    local cardcorner = Instance.new("UICorner")
-    cardcorner.CornerRadius = UDim.new(0, 4)
-    cardcorner.Parent = card
-
-    local headerlbl = Instance.new("TextLabel")
-    headerlbl.Size = UDim2.new(1, -12, 0, 20)
-    headerlbl.Position = UDim2.new(0, 6, 0, 4)
-    headerlbl.BackgroundTransparency = 1
-    headerlbl.Text = remotename .. " (" .. remotetype .. ")"
-    headerlbl.TextColor3 = currenttheme.Text
-    headerlbl.TextSize = 11
-    headerlbl.Font = Enum.Font.Code
-    headerlbl.TextXAlignment = Enum.TextXAlignment.Left
-    headerlbl.Parent = card
-
-    local argslbl = Instance.new("TextLabel")
-    argslbl.Size = UDim2.new(1, -12, 0, 18)
-    argslbl.Position = UDim2.new(0, 6, 0, 24)
-    argslbl.BackgroundTransparency = 1
-    argslbl.Text = "1 " .. '"' .. tostring(args[1] or "") .. '"'
-    argslbl.TextColor3 = currenttheme.Accent
-    argslbl.TextSize = 11
-    argslbl.Font = Enum.Font.Code
-    argslbl.TextXAlignment = Enum.TextXAlignment.Left
-    argslbl.Parent = card
-
-    local timelbl = Instance.new("TextLabel")
-    timelbl.Size = UDim2.new(1, -12, 0, 16)
-    timelbl.Position = UDim2.new(0, 6, 0, 43)
-    timelbl.BackgroundTransparency = 1
-    timelbl.Text = os.date("%H:%M:%S")
-    timelbl.TextColor3 = currenttheme.Text
-    timelbl.TextSize = 10
-    timelbl.Font = Enum.Font.Code
-    timelbl.TextXAlignment = Enum.TextXAlignment.Left
-    timelbl.Parent = card
-
-    local openbtn = Instance.new("TextButton")
-    openbtn.Size = UDim2.new(1, 0, 1, 0)
-    openbtn.BackgroundTransparency = 1
-    openbtn.Text = ""
-    openbtn.Parent = card
-
-    openbtn.MouseButton1Click:Connect(function()
-        activeobject = remoteobj
-        activeargs = args
-        mainscroll.Visible = false
-        detailview.Visible = true
-        if activetab == "args" then
-            renderargs()
-        elseif activetab == "code" then
-            rendercode()
-        else
-            renderinfo()
-        end
-    end)
-
-    local sidebtn = Instance.new("TextButton")
-    sidebtn.Size = UDim2.new(1, -8, 0, 32)
-    sidebtn.Position = UDim2.new(0, 4, 0, 0)
-    sidebtn.BackgroundColor3 = currenttheme.Card
-    sidebtn.BackgroundTransparency = 0.7
-    sidebtn.Text = remotename
-    sidebtn.TextColor3 = currenttheme.Text
-    sidebtn.TextSize = 11
-    sidebtn.Font = Enum.Font.Code
-    sidebtn.Parent = sidebar
-
-    local btnstroke = Instance.new("UIStroke")
-    btnstroke.Color = currenttheme.Stroke
-    btnstroke.Thickness = 1
-    btnstroke.Parent = sidebtn
-
-    local btncorner = Instance.new("UICorner")
-    btncorner.CornerRadius = UDim.new(0, 4)
-    btncorner.Parent = sidebtn
-
-    sidebtn.MouseButton1Click:Connect(function()
-        mainscroll.Visible = false
-        detailview.Visible = true
-        activeobject = remoteobj
-        activeargs = args
-        if activetab == "args" then
-            renderargs()
-        elseif activetab == "code" then
-            rendercode()
-        else
-            renderinfo()
-        end
-    end)
-
-    table.insert(allcards, {Card = card, SideBtn = sidebtn, Type = remotetype})
-    updatefilter()
-end
-
-local function hookremotes()
-    local mt = getrawmetatable(game)
-    setreadonly(mt, false)
-    local oldnamecall = mt.__namecall
-
-    mt.__namecall = newcclosure(function(self, ...)
-        local method = getnamecallmethod()
-        if method == "FireServer" or method == "fireServer" or method == "InvokeServer" or method == "invokeServer" then
-            local args = {...}
-            if self:IsA("RemoteEvent") then
-                addlog("Outgoing", self.Name, self, args)
-            elseif self:IsA("UnreliableRemoteEvent") then
-                addlog("Outgoing", self.Name, self, args)
-            elseif self:IsA("RemoteFunction") then
-                addlog("Outgoing", self.Name, self, args)
-            end
-        end
-        return oldnamecall(self, ...)
-    end)
-
-    setreadonly(mt, true)
-
-    for _, obj in ipairs(game:GetDescendants()) do
-        if obj:IsA("RemoteEvent") then
-            obj.OnClientEvent:Connect(function(...)
-                addlog("Incoming", obj.Name, obj, {...})
-            end)
-        elseif obj:IsA("UnreliableRemoteEvent") then
-            obj.OnClientEvent:Connect(function(...)
-                addlog("Incoming", obj.Name, obj, {...})
-            end)
-        end
-    end
-
-    game.DescendantAdded:Connect(function(obj)
-        if obj:IsA("RemoteEvent") then
-            obj.OnClientEvent:Connect(function(...)
-                addlog("Incoming", obj.Name, obj, {...})
-            end)
-        elseif obj:IsA("UnreliableRemoteEvent") then
-            obj.OnClientEvent:Connect(function(...)
-                addlog("Incoming", obj.Name, obj, {...})
-            end)
-        end
-    end)
-end
-
-closebtn.MouseButton1Click:Connect(function()
-    screen:Destroy()
-end)
-
-togglebtn.MouseButton1Click:Connect(function()
-    mainframe.Visible = not mainframe.Visible
-end)
-
-argstabbtn.MouseButton1Click:Connect(function()
-    activetab = "args"
-    renderargs()
-end)
-
-codetabbtn.MouseButton1Click:Connect(function()
-    activetab = "code"
-    rendercode()
-end)
-
-infotabbtn.MouseButton1Click:Connect(function()
-    activetab = "info"
-    renderinfo()
-end)
-
-backcontrolbtn.MouseButton1Click:Connect(function()
-    detailview.Visible = false
-    mainscroll.Visible = true
-    activeobject = nil
-end)
-
-copycontrolbtn.MouseButton1Click:Connect(function()
-    if setclipboard then
-        setclipboard(tostring(activeobject and activeobject:GetFullName() or ""))
-    end
-end)
-
-firecontrolbtn.MouseButton1Click:Connect(function()
-    if activeobject then
-        pcall(function()
-            if activeobject:IsA("RemoteEvent") then
-                activeobject:FireServer(unpack(activeargs))
-            elseif activeobject:IsA("UnreliableRemoteEvent") then
-                activeobject:FireServer(unpack(activeargs))
-            elseif activeobject:IsA("RemoteFunction") then
-                activeobject:InvokeServer(unpack(activeargs))
-            end
-        end)
-    end
-end)
-
-task.spawn(hookremotes)
