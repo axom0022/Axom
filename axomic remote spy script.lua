@@ -199,16 +199,12 @@ oldnamecall = hookmetamethod(game, "__namecall", function(self, ...)
 	local method = getnamecallmethod()
 	local args = {...}
 	
-	if (method == "FireServer" or method == "InvokeServer") and not checkcaller() then
-		task.spawn(function()
-			pcall(function()
-				if self:IsA("RemoteEvent") and method == "FireServer" then
-					addlog("Event", self, args)
-				elseif self:IsA("RemoteFunction") and method == "InvokeServer" then
-					addlog("Function", self, args)
-				end
-			end)
-		end)
+	if not checkcaller() then
+		if self:IsA("RemoteEvent") and method == "FireServer" then
+			addlog("Event", self, args)
+		elseif self:IsA("RemoteFunction") and method == "InvokeServer" then
+			addlog("Function", self, args)
+		end
 	end
 	
 	return oldnamecall(self, ...)
