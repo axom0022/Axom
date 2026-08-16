@@ -180,6 +180,7 @@ local function addlog(remotetype, remote, args)
 	entrybutton.TextSize = 11
 	entrybutton.Font = Enum.Font.Code
 	entrybutton.TextXAlignment = Enum.TextXAlignment.Left
+	entrybutton.ClipsDescendants = true
 	entrybutton.Parent = scrollingframe
 
 	local entrycorner = Instance.new("UICorner")
@@ -190,8 +191,7 @@ local function addlog(remotetype, remote, args)
 		detailsbox.Text = "Remote: " .. remote:GetFullName() .. "\nType: " .. remotetype .. "\n\nArguments:\n" .. serializeargs(args)
 	end)
 
-	local scrollingcanvassize = uilistlayout.AbsoluteContentSize.Y
-	scrollingframe.CanvasSize = UDim2.new(0, 0, 0, scrollingcanvassize)
+	scrollingframe.CanvasSize = UDim2.new(0, 0, 0, uilistlayout.AbsoluteContentSize.Y)
 end
 
 local oldnamecall
@@ -199,12 +199,16 @@ oldnamecall = hookmetamethod(game, "__namecall", function(self, ...)
 	local method = getnamecallmethod()
 	local args = {...}
 	
-	if not checkcaller() then
-		if self:IsA("RemoteEvent") and method == "FireServer" then
-			addlog("Event", self, args)
-		elseif self:IsA("RemoteFunction") and method == "InvokeServer" then
-			addlog("Function", self, args)
-		end
+	if (method == "FireServer" or method == "InvokeServer") and not checkcaller() then
+		task.spawn(function()
+			pcall(function()
+				if self:IsA("RemoteEvent") and method == "FireServer" then
+					addlog("Event", self, args)
+				elseif self:IsA("RemoteFunction") and method == "InvokeServer" then
+					addlog("Function", self, args)
+				end
+			end)
+		end)
 	end
 	
 	return oldnamecall(self, ...)
