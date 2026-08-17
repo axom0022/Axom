@@ -7,12 +7,17 @@ it is built to scan for all triggerable stuff in roblox games (RemoteEvents & Un
 local players = game:GetService("Players")
 local runservice = game:GetService("RunService")
 local uis = game:GetService("UserInputService")
+local replicatedstorage = game:GetService("ReplicatedStorage")
+local replicatedfirst = game:GetService("ReplicatedFirst")
+local starterplayer = game:GetService("StarterPlayer")
+local starterplayerscripts = starterplayer:WaitForChild("StarterPlayerScripts")
+local coregui = game:GetService("CoreGui")
 
 local localplayer = players.LocalPlayer
 local playergui = localplayer:WaitForChild("PlayerGui")
 
 local screen = Instance.new("ScreenGui")
-screen.Name = "axomicrbxgamescanner"
+screen.Name = "advancedremote"
 screen.ResetOnSpawn = false
 screen.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 screen.Parent = playergui
@@ -127,6 +132,7 @@ detailslayout.Parent = detailsscroll
 
 local itemtable = {}
 local selecteditem = nil
+local activeconnections = {}
 
 local function clearui(container)
 	for _, child in ipairs(container:GetChildren()) do
@@ -144,66 +150,25 @@ local function cleardetails()
 	end
 end
 
-local function capturestate(obj)
-	local st = {}
-	pcall(function()
-		if obj:IsA("BasePart") then
-			st.position = tostring(obj.Position)
-			st.size = tostring(obj.Size)
-			st.transparency = obj.Transparency
-			st.anchored = obj.Anchored
-		elseif obj:IsA("Model") then
-			st.worldpivot = tostring(obj:GetPivot())
-		elseif obj:IsA("ValueBase") then
-			st.value = tostring(obj.Value)
-		end
-		st.parent = obj.Parent and obj.Parent.Name or "nil"
-	end)
-	return st
-end
-
-local function firesingle(dat)
+local function hookevents(dat)
 	local obj = dat.instance
-	dat.before = capturestate(obj)
-	dat.fired = true
-	
-	pcall(function()
-		if obj:IsA("RemoteEvent") then
-			obj:FireServer("test", 123, workspace)
-			table.insert(dat.args, "test")
-			table.insert(dat.args, 123)
-			table.insert(dat.args, workspace)
-		elseif obj:IsA("UnreliableRemoteEvent") then
-			obj:FireServer("unreliable")
-			table.insert(dat.args, "unreliable")
-		elseif obj:IsA("RemoteFunction") then
-			task.spawn(function()
-				pcall(function()
-					obj:InvokeServer("test")
-				end)
-			end)
-			table.insert(dat.args, "invoke")
-		elseif obj:IsA("ClickDetector") then
-			fireclickdetector(obj, 0, "MouseClick")
-			table.insert(dat.args, "mouseclick")
-		elseif obj:IsA("TouchInterest") then
-			local part = obj.Parent
-			if part and part:IsA("BasePart") and localplayer.Character and localplayer.Character:FindFirstChild("HumanoidRootPart") then
-				firetouchinterest(localplayer.Character.HumanoidRootPart, part, 0)
-				firetouchinterest(localplayer.Character.HumanoidRootPart, part, 1)
-				table.insert(dat.args, "touch")
+	if obj:IsA("RemoteEvent") then
+		local conn = obj.OnClientEvent:Connect(function(...)
+			table.insert(dat.events, "fired client: " .. table.concat({...}, ", "))
+			if selecteditem == dat then
+				showdetails(dat)
 			end
-		elseif obj:IsA("Part") and obj:FindFirstChildWhichIsA("TouchInterest") then
-			if localplayer.Character and localplayer.Character:FindFirstChild("HumanoidRootPart") then
-				firetouchinterest(localplayer.Character.HumanoidRootPart, obj, 0)
-				firetouchinterest(localplayer.Character.HumanoidRootPart, obj, 1)
-				table.insert(dat.args, "touch")
+		end)
+		table.insert(activeconnections, conn)
+	elseif obj:IsA("BindableEvent") then
+		local conn = obj.Event:Connect(function(...)
+			table.insert(dat.events, "bindable fired: " .. table.concat({...}, ", "))
+			if selecteditem == dat then
+				showdetails(dat)
 			end
-		end
-	end)
-	
-	task.wait(0.01)
-	dat.after = capturestate(obj)
+		end)
+		table.insert(activeconnections, conn)
+	end
 end
 
 local function showdetails(data)
@@ -238,7 +203,6 @@ local function showdetails(data)
 	addline("name: " .. tostring(data.name))
 	addline("path: " .. tostring(data.path))
 	addline("type: " .. tostring(data.type))
-	addline("fired: " .. tostring(data.fired))
 	
 	addbutton("copy path", function()
 		pcall(function()
@@ -247,30 +211,51 @@ local function showdetails(data)
 	end)
 	
 	addbutton("fire object", function()
-		firesingle(data)
+		pcall(function()
+			local obj = data.instance
+			if obj:IsA("RemoteEvent") then
+				obj:FireServer()
+			elseif obj:IsA("UnreliableRemoteEvent") then
+				obj:FireServer()
+			elseif obj:IsA("RemoteFunction") then
+				task.spawn(function()
+					obj:InvokeServer()
+				end)
+			elseif obj:IsA("ClickDetector") then
+				fireclickdetector(obj, 0, "MouseClick")
+			elseif obj:IsA("TouchInterest") then
+				local part = obj.Parent
+				if part and part:IsA("BasePart") and localplayer.Character and localplayer.Character:FindFirstChild("HumanoidRootPart") then
+					firetouchinterest(localplayer.Character.HumanoidRootPart, part, 0)
+					firetouchinterest(localplayer.Character.HumanoidRootPart, part, 1)
+				end
+			end
+		end)
+	end)
+	
+	addbutton("clear logs", function()
+		data.events = {}
 		showdetails(data)
 	end)
 	
-	addbutton("recheck state", function()
-		data.after = capturestate(data.instance)
-		showdetails(data)
-	end)
-	
-	addline("--- before state ---")
-	for k, v in pairs(data.before) do
-		addline("  " .. tostring(k) .. ": " .. tostring(v))
-	end
-	addline("--- after state ---")
-	for k, v in pairs(data.after) do
-		addline("  " .. tostring(k) .. ": " .. tostring(v))
-	end
-	addline("--- arguments ---")
-	for _, arg in ipairs(data.args) do
-		addline("  arg: " .. tostring(arg))
+	addline("--- captured activity/changes ---")
+	if #data.events == 0 then
+		addline("  no activity recorded yet")
+	else
+		for _, ev in ipairs(data.events) do
+			addline("  " .. tostring(ev))
+		end
 	end
 end
 
 local function scanobjects()
+	for _, conn in ipairs(activeconnections) do
+		pcall(function()
+			conn:Disconnect()
+		end)
+	end
+	activeconnections = {}
+	
 	itemtable = {}
 	clearui(listscroll)
 	cleardetails()
@@ -302,12 +287,10 @@ local function scanobjects()
 					name = child.Name,
 					path = child:GetFullName(),
 					type = tp,
-					fired = false,
-					before = {},
-					after = {},
-					args = {}
+					events = {}
 				}
 				table.insert(itemtable, entry)
+				hookevents(entry)
 			end
 			
 			pcall(function()
@@ -319,9 +302,12 @@ local function scanobjects()
 	end
 	
 	inspect(workspace)
-	inspect(game:GetService("ReplicatedStorage"))
-	inspect(game:GetService("StarterGui"))
-	inspect(game:GetService("Players"))
+	inspect(replicatedstorage)
+	inspect(replicatedfirst)
+	inspect(playergui)
+	inspect(coregui)
+	inspect(starterplayerscripts)
+	inspect(players)
 	
 	for _, dat in ipairs(itemtable) do
 		local card = Instance.new("Frame")
@@ -350,7 +336,26 @@ end
 
 local function fireobjects()
 	for _, dat in ipairs(itemtable) do
-		firesingle(dat)
+		pcall(function()
+			local obj = dat.instance
+			if obj:IsA("RemoteEvent") then
+				obj:FireServer()
+			elseif obj:IsA("UnreliableRemoteEvent") then
+				obj:FireServer()
+			elseif obj:IsA("RemoteFunction") then
+				task.spawn(function()
+					obj:InvokeServer()
+				end)
+			elseif obj:IsA("ClickDetector") then
+				fireclickdetector(obj, 0, "MouseClick")
+			elseif obj:IsA("TouchInterest") then
+				local part = obj.Parent
+				if part and part:IsA("BasePart") and localplayer.Character and localplayer.Character:FindFirstChild("HumanoidRootPart") then
+					firetouchinterest(localplayer.Character.HumanoidRootPart, part, 0)
+					firetouchinterest(localplayer.Character.HumanoidRootPart, part, 1)
+				end
+			end
+		end)
 		task.wait(0.01)
 	end
 	
@@ -362,3 +367,6 @@ end
 scanbutton.MouseButton1Click:Connect(scanobjects)
 firebutton.MouseButton1Click:Connect(fireobjects)
 scanobjects()
+
+			
+			
