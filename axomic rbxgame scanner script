@@ -11,6 +11,7 @@ local replicatedstorage = game:GetService("ReplicatedStorage")
 local replicatedfirst = game:GetService("ReplicatedFirst")
 local starterplayer = game:GetService("StarterPlayer")
 local starterplayerscripts = starterplayer:WaitForChild("StarterPlayerScripts")
+local starterguitarget = game:GetService("StarterGui")
 local coregui = game:GetService("CoreGui")
 
 local localplayer = players.LocalPlayer
@@ -150,6 +151,30 @@ local function cleardetails()
 	end
 end
 
+local function analyzersource(src)
+	local summary = {}
+	local lower = string.lower(src)
+	if string.find(lower, "remoteserver") or string.find(lower, "fireserver") or string.find(lower, "remotefunction") then
+		table.insert(summary, "communicates with server via remotes")
+	end
+	if string.find(lower, "tween") or string.find(lower, "lerp") or string.find(lower, "renderstepped") then
+		table.insert(summary, "handles animations or frame updates")
+	end
+	if string.find(lower, "uis") or string.find(lower, "inputbegan") or string.find(lower, "mousebutton") then
+		table.insert(summary, "handles player inputs or user interface clicks")
+	end
+	if string.find(lower, "character") or string.find(lower, "humanoid") or string.find(lower, "rootpart") then
+		table.insert(summary, "manipulates character physics or attributes")
+	end
+	if string.find(lower, "leaderstats") or string.find(lower, "coin") or string.find(lower, "cash") or string.find(lower, "score") then
+		table.insert(summary, "manages game currency or stats")
+	end
+	if #summary == 0 then
+		table.insert(summary, "executes custom client logic")
+	end
+	return table.concat(summary, "; ")
+end
+
 local function hookevents(dat)
 	local obj = dat.instance
 	if obj:IsA("RemoteEvent") then
@@ -210,40 +235,57 @@ local function showdetails(data)
 		end)
 	end)
 	
-	addbutton("fire object", function()
-		pcall(function()
-			local obj = data.instance
-			if obj:IsA("RemoteEvent") then
-				obj:FireServer()
-			elseif obj:IsA("UnreliableRemoteEvent") then
-				obj:FireServer()
-			elseif obj:IsA("RemoteFunction") then
-				task.spawn(function()
-					obj:InvokeServer()
-				end)
-			elseif obj:IsA("ClickDetector") then
-				fireclickdetector(obj, 0, "MouseClick")
-			elseif obj:IsA("TouchInterest") then
-				local part = obj.Parent
-				if part and part:IsA("BasePart") and localplayer.Character and localplayer.Character:FindFirstChild("HumanoidRootPart") then
-					firetouchinterest(localplayer.Character.HumanoidRootPart, part, 0)
-					firetouchinterest(localplayer.Character.HumanoidRootPart, part, 1)
-				end
-			end
+	if data.type == "localscript" or data.type == "modulescript" then
+		addbutton("copy source", function()
+			pcall(function()
+				setclipboard(data.source)
+			end)
 		end)
-	end)
+	else
+		addbutton("fire object", function()
+			pcall(function()
+				local obj = data.instance
+				if obj:IsA("RemoteEvent") then
+					obj:FireServer()
+				elseif obj:IsA("UnreliableRemoteEvent") then
+					obj:FireServer()
+				elseif obj:IsA("RemoteFunction") then
+					task.spawn(function()
+						obj:InvokeServer()
+					end)
+				elseif obj:IsA("ClickDetector") then
+					fireclickdetector(obj, 0, "MouseClick")
+				elseif obj:IsA("TouchInterest") then
+					local part = obj.Parent
+					if part and part:IsA("BasePart") and localplayer.Character and localplayer.Character:FindFirstChild("HumanoidRootPart") then
+						firetouchinterest(localplayer.Character.HumanoidRootPart, part, 0)
+						firetouchinterest(localplayer.Character.HumanoidRootPart, part, 1)
+					end
+				end
+			end)
+		end)
+	end
 	
 	addbutton("clear logs", function()
 		data.events = {}
 		showdetails(data)
 	end)
 	
-	addline("--- captured activity/changes ---")
-	if #data.events == 0 then
-		addline("  no activity recorded yet")
+	if data.type == "localscript" or data.type == "modulescript" then
+		addline("--- script purpose ---")
+		addline("  " .. tostring(data.analysis))
+		addline("--- source code ---")
+		for _, line in ipairs(data.sourcelines) do
+			addline("  " .. tostring(line))
+		end
 	else
-		for _, ev in ipairs(data.events) do
-			addline("  " .. tostring(ev))
+		addline("--- captured activity ---")
+		if #data.events == 0 then
+			addline("  no activity recorded yet")
+		else
+			for _, ev in ipairs(data.events) do
+				addline("  " .. tostring(ev))
+			end
 		end
 	end
 end
@@ -279,15 +321,41 @@ local function scanobjects()
 			elseif child:IsA("TouchInterest") or (child:IsA("Part") and child:FindFirstChildWhichIsA("TouchInterest")) then
 				matched = true
 				tp = "touchinterest"
+			elseif child:IsA("LocalScript") then
+				matched = true
+				tp = "localscript"
+			elseif child:IsA("ModuleScript") then
+				matched = true
+				tp = "modulescript"
 			end
 			
 			if matched then
+				local src = ""
+				local analysis = ""
+				local lines = {}
+				if tp == "localscript" or tp == "modulescript" then
+					pcall(function()
+						if decompile then
+							src = decompile(child)
+						else
+							src = "-- decompiler unavailable"
+						end
+					end)
+					analysis = analyzersource(src)
+					for line in string.gmatch(src, "[^\r\n]+") do
+						table.insert(lines, line)
+					end
+				end
+				
 				local entry = {
 					instance = child,
 					name = child.Name,
 					path = child:GetFullName(),
 					type = tp,
-					events = {}
+					events = {},
+					source = src,
+					sourcelines = lines,
+					analysis = analysis
 				}
 				table.insert(itemtable, entry)
 				hookevents(entry)
@@ -307,6 +375,8 @@ local function scanobjects()
 	inspect(playergui)
 	inspect(coregui)
 	inspect(starterplayerscripts)
+	inspect(starterguitarget)
+	inspect(starterplayer)
 	inspect(players)
 	
 	for _, dat in ipairs(itemtable) do
@@ -367,6 +437,4 @@ end
 scanbutton.MouseButton1Click:Connect(scanobjects)
 firebutton.MouseButton1Click:Connect(fireobjects)
 scanobjects()
-
-			
-			
+										
