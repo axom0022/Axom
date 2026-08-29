@@ -1,13 +1,4 @@
--- vr7 open~src by @mohamoha0973
-local v1 = game:IsLoaded()
-if v1 then
-    game.Loaded:Wait()
-end
-if not _G.Opened then
-    while true do
-        while true do
-            if 0 == 1 then
-                if 0 == 0 then
+
                     local v2 = game:GetService("StarterGui")
                     v2:SetCore("SendNotification", {
 local Title = "System VR7",
